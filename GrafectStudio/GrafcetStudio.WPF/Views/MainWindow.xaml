@@ -2,6 +2,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:prism="http://prismlibrary.com/"
+        xmlns:avd="https://github.com/Dirkster99/AvalonDock"
         Title="GRAFCET Studio"
         Height="768" Width="1280"
         MinHeight="480" MinWidth="800"
@@ -69,23 +70,64 @@
             </StatusBarItem>
         </StatusBar>
 
-        <!-- Center: Tab views — each tab owns a separate Prism region -->
-        <TabControl Background="{StaticResource BackgroundPrimaryBrush}"
-                    BorderThickness="0">
+        <!-- Center: AvalonDock layout with professional IDE panels -->
+        <avd:DockingManager x:Name="DockManager">
+            <avd:DockingManager.Theme>
+                <avd:Vs2013LightTheme/>
+            </avd:DockingManager.Theme>
 
-            <TabItem Header="Flowchart">
-                <ContentControl prism:RegionManager.RegionName="CanvasRegion"/>
-            </TabItem>
+            <avd:LayoutRoot>
+                <avd:LayoutPanel Orientation="Horizontal">
 
-            <TabItem Header="Variables">
-                <ContentControl prism:RegionManager.RegionName="VariablesRegion"/>
-            </TabItem>
+                    <!-- Left panel: Toolbox -->
+                    <avd:LayoutAnchorablePane DockWidth="200">
+                        <avd:LayoutAnchorable Title="Toolbox"
+                                              CanClose="False"
+                                              CanHide="False">
+                            <TextBlock Text="Toolbox panel"
+                                       Margin="12"
+                                       Foreground="{StaticResource TextSecondaryBrush}"/>
+                        </avd:LayoutAnchorable>
+                    </avd:LayoutAnchorablePane>
 
-            <TabItem Header="Code Output">
-                <ContentControl prism:RegionManager.RegionName="CodeRegion"/>
-            </TabItem>
+                    <!-- Center + Bottom: Document pane + Code output -->
+                    <avd:LayoutPanel Orientation="Vertical">
 
-        </TabControl>
+                        <!-- Center: Document area (GRAFCET canvas) -->
+                        <avd:LayoutDocumentPane>
+                            <avd:LayoutDocument Title="Flowchart">
+                                <ContentControl prism:RegionManager.RegionName="CanvasRegion"/>
+                            </avd:LayoutDocument>
+                        </avd:LayoutDocumentPane>
+
+                        <!-- Bottom: Code output -->
+                        <avd:LayoutAnchorablePane DockHeight="220">
+                            <avd:LayoutAnchorable Title="Code Output"
+                                                  CanClose="False">
+                                <ContentControl prism:RegionManager.RegionName="CodeRegion"/>
+                            </avd:LayoutAnchorable>
+                        </avd:LayoutAnchorablePane>
+
+                    </avd:LayoutPanel>
+
+                    <!-- Right panel: Variables + Properties -->
+                    <avd:LayoutAnchorablePane DockWidth="280">
+                        <avd:LayoutAnchorable Title="Variables"
+                                              CanClose="False">
+                            <ContentControl prism:RegionManager.RegionName="VariablesRegion"/>
+                        </avd:LayoutAnchorable>
+
+                        <avd:LayoutAnchorable Title="Properties"
+                                              CanClose="False">
+                            <TextBlock Text="Properties panel"
+                                       Margin="12"
+                                       Foreground="{StaticResource TextSecondaryBrush}"/>
+                        </avd:LayoutAnchorable>
+                    </avd:LayoutAnchorablePane>
+
+                </avd:LayoutPanel>
+            </avd:LayoutRoot>
+        </avd:DockingManager>
 
     </DockPanel>
 

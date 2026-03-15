@@ -2,14 +2,11 @@
                         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                         xmlns:prism="http://prismlibrary.com/"
-                        xmlns:xceed="http://schemas.xceed.com/wpf/xaml/toolkit">
+                        xmlns:avd="https://github.com/Dirkster99/AvalonDock">
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <!-- Extended WPF Toolkit theme for consistent control styling -->
-                <ResourceDictionary Source="/Extended.Wpf.Toolkit;component/Themes/VS2013/Common.xaml"/>
-
-                <!-- Custom color palette (overrides theme defaults where needed) -->
+                <!-- Custom color palette -->
                 <ResourceDictionary Source="Resources/Colors.xaml"/>
                 <ResourceDictionary Source="Resources/Controls.xaml"/>
             </ResourceDictionary.MergedDictionaries>

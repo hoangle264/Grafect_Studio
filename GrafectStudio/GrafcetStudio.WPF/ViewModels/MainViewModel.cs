@@ -6,6 +6,7 @@ using GrafcetStudio.Core.Commands;
 using GrafcetStudio.Core.Models.Document;
 using GrafcetStudio.Core.Models.Variables;
 using GrafcetStudio.Core.Services;
+using GrafcetStudio.WPF.Events;
 using Microsoft.Win32;
 using Prism.Commands;
 using Prism.Events;
@@ -32,6 +33,12 @@ public class MainViewModel : BindableBase
     private bool _canRedo;
     private string _generatedCode = "";
     private string _selectedTarget = "KeyenceMnemonic";
+    private string? _cachedLayoutXml;
+
+    // Path to the persisted AvalonDock layout file
+    private static readonly string LAYOUT_FILE = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+        "GrafcetStudio", "layout.xml");
 
     public MainViewModel(
         IRegionManager regionManager,
@@ -60,6 +67,12 @@ public class MainViewModel : BindableBase
         GenerateCodeCommand = new DelegateCommand(ExecuteGenerateCode);
 
         _undoRedoStack.StateChanged += OnUndoRedoStateChanged;
+
+        // Cache the saved layout so MainWindow can apply it after Loaded
+        _cachedLayoutXml = LoadLayout();
+
+        // Persist layout whenever the window closes
+        _eventAggregator.GetEvent<WindowClosingEvent>().Subscribe(SaveLayout);
     }
 
     // ── Properties ────────────────────────────────────────────────────────────
@@ -67,6 +80,12 @@ public class MainViewModel : BindableBase
     /// <summary>The currently active GRAFCET document.</summary>
     /// <summary>The shared singleton document. Content is replaced in-place on New/Open.</summary>
     public GrafcetDocument Document => _document;
+
+    /// <summary>
+    /// Layout XML read from disk at startup; consumed by MainWindow.OnLoaded
+    /// to restore panel positions. Null when no saved layout exists.
+    /// </summary>
+    public string? CachedLayoutXml => _cachedLayoutXml;
 
     /// <summary>Reflects <see cref="UndoRedoStack.CanUndo"/>; drives UndoCommand.CanExecute.</summary>
     public bool CanUndo
@@ -199,4 +218,23 @@ public class MainViewModel : BindableBase
         CanUndo = _undoRedoStack.CanUndo;
         CanRedo = _undoRedoStack.CanRedo;
     }
+
+    // ── Layout persistence ────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Writes the serialized AvalonDock layout XML to disk.
+    /// Subscribed to <see cref="WindowClosingEvent"/> so it fires automatically on exit.
+    /// </summary>
+    private void SaveLayout(string xml)
+    {
+        Directory.CreateDirectory(Path.GetDirectoryName(LAYOUT_FILE)!);
+        File.WriteAllText(LAYOUT_FILE, xml);
+    }
+
+    /// <summary>
+    /// Reads the persisted layout XML from disk.
+    /// Returns null if no saved layout exists yet (first run).
+    /// </summary>
+    private string? LoadLayout() =>
+        File.Exists(LAYOUT_FILE) ? File.ReadAllText(LAYOUT_FILE) : null;
 }
