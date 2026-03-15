@@ -54,6 +54,7 @@ public class GrafcetCanvasViewModel : BindableBase, INavigationAware
         ZoomCommand          = new DelegateCommand<string>(ExecuteZoom);
         SelectElementCommand = new DelegateCommand<object?>(element => SelectedElement = element);
         DropElementCommand   = new DelegateCommand<DropPayload>(ExecuteDrop);
+        MoveElementCommand   = new DelegateCommand<MovePayload>(ExecuteMove);
     }
 
     // ── Collections ───────────────────────────────────────────────────────────
@@ -110,6 +111,9 @@ public class GrafcetCanvasViewModel : BindableBase, INavigationAware
 
     /// <summary>Creates a GRAFCET element at the drop coordinates supplied by <see cref="DropPayload"/>.</summary>
     public DelegateCommand<DropPayload> DropElementCommand { get; }
+
+    /// <summary>Moves a step or transition by the delta supplied by <see cref="MovePayload"/>.</summary>
+    public DelegateCommand<MovePayload> MoveElementCommand { get; }
 
     // ── Command handlers ──────────────────────────────────────────────────────
 
@@ -197,7 +201,9 @@ public class GrafcetCanvasViewModel : BindableBase, INavigationAware
                     Id         = id,
                     Condition  = "TRUE",
                     FromStepId = 0,
-                    ToStepId   = 0
+                    ToStepId   = 0,
+                    X          = payload.X,
+                    Y          = payload.Y
                 };
 
                 _undoRedoStack.Push(new AddTransitionCommand(transition), _document);
@@ -212,6 +218,42 @@ public class GrafcetCanvasViewModel : BindableBase, INavigationAware
                 System.Diagnostics.Debug.WriteLine(
                     $"[DropElement] Warning: '{payload.ElementType}' not implemented yet.");
                 break;
+        }
+    }
+
+    private void ExecuteMove(MovePayload? payload)
+    {
+        if (payload is null || _document is null) return;
+
+        if (payload.Element is StepViewModel stepVm)
+        {
+            var step = _document.GetStep(stepVm.Id);
+            if (step is null) return;
+
+            double newX = step.X + payload.DeltaX;
+            double newY = step.Y + payload.DeltaY;
+
+            System.Diagnostics.Debug.WriteLine($"[ExecuteMove] Step {stepVm.Id}: ({step.X}, {step.Y}) + ({payload.DeltaX}, {payload.DeltaY}) = ({newX}, {newY})");
+
+            _undoRedoStack.Push(new ModifyStepCommand(stepVm.Id, x: newX, y: newY), _document);
+
+            stepVm.X = newX;
+            stepVm.Y = newY;
+        }
+        else if (payload.Element is TransitionViewModel transVm)
+        {
+            var trans = _document.GetTransition(transVm.Id);
+            if (trans is null) return;
+
+            double newX = trans.X + payload.DeltaX;
+            double newY = trans.Y + payload.DeltaY;
+
+            System.Diagnostics.Debug.WriteLine($"[ExecuteMove] Transition {transVm.Id}: ({trans.X}, {trans.Y}) + ({payload.DeltaX}, {payload.DeltaY}) = ({newX}, {newY})");
+
+            _undoRedoStack.Push(new ModifyTransitionCommand(transVm.Id, x: newX, y: newY), _document);
+
+            transVm.X = newX;
+            transVm.Y = newY;
         }
     }
 
@@ -243,12 +285,24 @@ public class GrafcetCanvasViewModel : BindableBase, INavigationAware
         var transMap = new Dictionary<int, TransitionViewModel>(doc.Transitions.Count);
         foreach (var trans in doc.Transitions)
         {
-            double tx = 0, ty = 0;
-            if (stepMap.TryGetValue(trans.FromStepId, out var fromStep) &&
-                stepMap.TryGetValue(trans.ToStepId,   out var toStep))
+            double tx, ty;
+
+            // Use persisted position when available; fall back to step mid-point
+            if (trans.X != 0 || trans.Y != 0)
+            {
+                tx = trans.X;
+                ty = trans.Y;
+            }
+            else if (stepMap.TryGetValue(trans.FromStepId, out var fromStep) &&
+                     stepMap.TryGetValue(trans.ToStepId,   out var toStep))
             {
                 tx = fromStep.X;
                 ty = (fromStep.Y + STEP_HEIGHT + toStep.Y) / 2.0;
+            }
+            else
+            {
+                tx = 0;
+                ty = 0;
             }
 
             var vm = new TransitionViewModel(trans, tx, ty);

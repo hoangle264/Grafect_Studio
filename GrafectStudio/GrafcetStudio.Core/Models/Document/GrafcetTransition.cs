@@ -18,4 +18,10 @@ public class GrafcetTransition
 
     /// <summary>Id of the successor step that becomes active when this transition fires.</summary>
     public int ToStepId { get; set; }
+
+    /// <summary>Canvas X position persisted with the transition (0 = not yet placed).</summary>
+    public double X { get; set; }
+
+    /// <summary>Canvas Y position persisted with the transition (0 = not yet placed).</summary>
+    public double Y { get; set; }
 }

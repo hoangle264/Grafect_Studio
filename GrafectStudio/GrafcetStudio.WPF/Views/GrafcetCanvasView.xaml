@@ -71,13 +71,10 @@
                     </ItemsControl.ItemContainerStyle>
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
-                            <StackPanel Orientation="Horizontal" Cursor="Hand">
-                                <StackPanel.InputBindings>
-                                    <MouseBinding MouseAction="LeftClick"
-                                                  Command="{Binding DataContext.SelectElementCommand,
-                                                            RelativeSource={RelativeSource AncestorType=ItemsControl}}"
-                                                  CommandParameter="{Binding}"/>
-                                </StackPanel.InputBindings>
+                            <StackPanel Orientation="Horizontal" Cursor="Hand"
+                                        MouseLeftButtonDown="OnElementMouseDown"
+                                        MouseLeftButtonUp="OnElementMouseUp"
+                                        MouseMove="OnElementMouseMove">
                                 <Rectangle Width="80" Height="6"
                                            Fill="{StaticResource TransitionFillBrush}"
                                            VerticalAlignment="Center"/>
@@ -113,13 +110,10 @@
                                     BorderBrush="{StaticResource StepBorderBrush}"
                                     BorderThickness="2"
                                     Background="{StaticResource StepFillBrush}"
-                                    Cursor="Hand">
-                                <Border.InputBindings>
-                                    <MouseBinding MouseAction="LeftClick"
-                                                  Command="{Binding DataContext.SelectElementCommand,
-                                                            RelativeSource={RelativeSource AncestorType=ItemsControl}}"
-                                                  CommandParameter="{Binding}"/>
-                                </Border.InputBindings>
+                                    Cursor="Hand"
+                                    MouseLeftButtonDown="OnElementMouseDown"
+                                    MouseLeftButtonUp="OnElementMouseUp"
+                                    MouseMove="OnElementMouseMove">
                                 <Grid>
                                     <!-- Inner border shown only for initial step -->
                                     <Border x:Name="InitialBorder"
