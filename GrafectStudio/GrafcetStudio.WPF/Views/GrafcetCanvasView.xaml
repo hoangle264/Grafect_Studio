@@ -5,14 +5,33 @@
              prism:ViewModelLocator.AutoWireViewModel="True"
              Focusable="True">
 
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+    </UserControl.Resources>
+
     <Grid>
+        <Grid.Style>
+            <Style TargetType="Grid">
+                <Setter Property="Cursor" Value="Arrow"/>
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding CurrentMode,
+                                     Converter={StaticResource EnumToBoolConverter},
+                                     ConverterParameter=Connect}"
+                                 Value="True">
+                        <Setter Property="Cursor" Value="Cross"/>
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+        </Grid.Style>
         <!-- Scrollable canvas area -->
         <ScrollViewer HorizontalScrollBarVisibility="Auto"
                       VerticalScrollBarVisibility="Auto">
             <Grid Width="3000" Height="3000"
                   AllowDrop="True"
                   Drop="OnCanvasDrop"
-                  DragOver="OnCanvasDragOver">
+                  DragOver="OnCanvasDragOver"
+                  PreviewMouseMove="OnCanvasMouseMove"
+                  MouseLeftButtonUp="OnCanvasMouseUp">
                 <!-- Zoom transform applied to entire canvas grid -->
                 <Grid.LayoutTransform>
                     <ScaleTransform ScaleX="{Binding Zoom}" ScaleY="{Binding Zoom}"/>
@@ -165,6 +184,17 @@
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
+
+                <!-- Layer 4: Ghost line overlay for drag-to-create-link -->
+                <Line X1="{Binding GhostX1}" Y1="{Binding GhostY1}"
+                      X2="{Binding GhostX2}" Y2="{Binding GhostY2}"
+                      Stroke="{StaticResource AccentPrimaryBrush}"
+                      StrokeThickness="2"
+                      StrokeDashArray="4 2"
+                      IsHitTestVisible="False"
+                      Panel.ZIndex="20"
+                      Visibility="{Binding GhostLineVisible,
+                          Converter={StaticResource BooleanToVisibilityConverter}}"/>
             </Grid>
         </ScrollViewer>
 
@@ -199,6 +229,27 @@
                            VerticalAlignment="Center"/>
             </DockPanel>
         </Border>
+
+        <!-- Mode toolbar overlay (top-left corner) -->
+        <StackPanel HorizontalAlignment="Left"
+                    VerticalAlignment="Top"
+                    Panel.ZIndex="10"
+                    Orientation="Horizontal"
+                    Margin="12,8,0,0">
+            <ToggleButton Content="↖ Select"
+                          Style="{StaticResource ModeToggleButton}"
+                          IsChecked="{Binding CurrentMode,
+                              Converter={StaticResource EnumToBoolConverter},
+                              ConverterParameter=Select}"
+                          ToolTip="Select / Move mode"/>
+            <ToggleButton Content="⟶ Connect"
+                          Style="{StaticResource ModeToggleButton}"
+                          IsChecked="{Binding CurrentMode,
+                              Converter={StaticResource EnumToBoolConverter},
+                              ConverterParameter=Connect}"
+                          Margin="4,0,0,0"
+                          ToolTip="Connect / Link mode"/>
+        </StackPanel>
 
         <!-- Zoom toolbar overlay (top-right corner) -->
         <StackPanel HorizontalAlignment="Right"

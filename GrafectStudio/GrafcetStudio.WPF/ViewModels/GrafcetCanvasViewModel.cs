@@ -4,6 +4,7 @@ using GrafcetStudio.Core.Commands;
 using GrafcetStudio.Core.Commands.Links;
 using GrafcetStudio.Core.Commands.Steps;
 using GrafcetStudio.Core.Commands.Transitions;
+using GrafcetStudio.Core.Models;
 using GrafcetStudio.Core.Models.Document;
 using GrafcetStudio.Core.Services;
 using GrafcetStudio.WPF.Events;
@@ -39,6 +40,10 @@ public class GrafcetCanvasViewModel : BindableBase, INavigationAware
     private object? _selectedElement;
     private bool _isLinkMode;
     private object? _linkSource;
+    private DragLinkState? _activeDrag;
+    private double _ghostX1, _ghostY1, _ghostX2, _ghostY2;
+    private bool   _ghostLineVisible;
+    private CanvasMode _currentMode = CanvasMode.Select;
 
     public GrafcetCanvasViewModel(
         IEventAggregator eventAggregator,
@@ -133,6 +138,33 @@ public class GrafcetCanvasViewModel : BindableBase, INavigationAware
     {
         get => _isLinkMode;
         private set => SetProperty(ref _isLinkMode, value);
+    }
+
+    // ── Drag-to-link properties ───────────────────────────────────────────────
+
+    /// <summary>Active link-drag state; null when no drag gesture is in progress.</summary>
+    public DragLinkState? ActiveDrag
+    {
+        get => _activeDrag;
+        private set => SetProperty(ref _activeDrag, value);
+    }
+
+    public double GhostX1 { get => _ghostX1; private set => SetProperty(ref _ghostX1, value); }
+    public double GhostY1 { get => _ghostY1; private set => SetProperty(ref _ghostY1, value); }
+    public double GhostX2 { get => _ghostX2; private set => SetProperty(ref _ghostX2, value); }
+    public double GhostY2 { get => _ghostY2; private set => SetProperty(ref _ghostY2, value); }
+
+    public bool GhostLineVisible
+    {
+        get => _ghostLineVisible;
+        private set => SetProperty(ref _ghostLineVisible, value);
+    }
+
+    /// <summary>Current interaction mode of the canvas (Select or Connect).</summary>
+    public CanvasMode CurrentMode
+    {
+        get => _currentMode;
+        set => SetProperty(ref _currentMode, value);
     }
 
     // ── Command handlers ──────────────────────────────────────────────────────
@@ -264,6 +296,7 @@ public class GrafcetCanvasViewModel : BindableBase, INavigationAware
     private void ExecuteMove(MovePayload? payload)
     {
         if (payload is null || _document is null) return;
+        if (CurrentMode != CanvasMode.Select) return;
 
         if (payload.Element is StepViewModel stepVm)
         {
@@ -334,14 +367,7 @@ public class GrafcetCanvasViewModel : BindableBase, INavigationAware
         int sourceId = _linkSource is StepViewModel sv ? sv.Id : ((TransitionViewModel)_linkSource).Id;
         int targetId = element    is StepViewModel tv ? tv.Id : ((TransitionViewModel)element).Id;
 
-        var link = new GrafcetLink
-        {
-            SourceId           = sourceId,
-            TargetId           = targetId,
-            IsStepToTransition = sourceIsStep
-        };
-
-        _undoRedoStack.Push(new AddLinkCommand(link), _document);
+        _undoRedoStack.Push(new AddLinkCommand(sourceId, targetId, sourceIsStep), _document);
         LoadFrom(_document);
 
         IsLinkMode  = false;
@@ -353,6 +379,99 @@ public class GrafcetCanvasViewModel : BindableBase, INavigationAware
         IsLinkMode      = false;
         _linkSource     = null;
         SelectedElement = null;
+    }
+
+    // ── Drag-to-link public API (called from code-behind) ─────────────────────
+
+    /// <summary>
+    /// Starts a link-drag gesture originating from <paramref name="element"/>
+    /// at canvas coordinates (<paramref name="x"/>, <paramref name="y"/>).
+    /// </summary>
+    public void BeginDrag(object element, double x, double y)
+    {
+        if (CurrentMode != CanvasMode.Connect) return;
+        if (element is not StepViewModel and not TransitionViewModel) return;
+
+        ActiveDrag = new DragLinkState
+        {
+            SourceElement = element,
+            StartX        = x,
+            StartY        = y,
+            CurrentX      = x,
+            CurrentY      = y
+        };
+
+        GhostX1 = x; GhostY1 = y;
+        GhostX2 = x; GhostY2 = y;
+        GhostLineVisible = true;
+    }
+
+    /// <summary>
+    /// Updates the ghost line endpoint and validates the hovered drop target.
+    /// </summary>
+    public void UpdateDrag(double x, double y, object? hoveredElement)
+    {
+        if (_activeDrag is null) return;
+
+        _activeDrag.CurrentX = x;
+        _activeDrag.CurrentY = y;
+        GhostX2 = x;
+        GhostY2 = y;
+
+        bool sourceIsStep = _activeDrag.SourceElement is StepViewModel;
+        _activeDrag.IsValidTarget =
+            hoveredElement is not null &&
+            hoveredElement != _activeDrag.SourceElement &&
+            (sourceIsStep
+                ? hoveredElement is TransitionViewModel
+                : hoveredElement is StepViewModel);
+    }
+
+    /// <summary>
+    /// Completes the drag gesture: creates a link if <paramref name="dropTarget"/> is valid,
+    /// then resets the ghost line.
+    /// </summary>
+    public void EndDrag(object? dropTarget)
+    {
+        if (_activeDrag is null || !_activeDrag.IsValidTarget || dropTarget is null)
+        {
+            ResetDrag();
+            return;
+        }
+
+        if (_document is null) { ResetDrag(); return; }
+
+        bool sourceIsStep = _activeDrag.SourceElement is StepViewModel;
+        int sourceId = _activeDrag.SourceElement is StepViewModel sv
+            ? sv.Id : ((TransitionViewModel)_activeDrag.SourceElement).Id;
+        int targetId = dropTarget is StepViewModel tv
+            ? tv.Id : ((TransitionViewModel)dropTarget).Id;
+
+        var prms = JsonSerializer.SerializeToElement(new
+        {
+            sourceId,
+            targetId,
+            isStepToTransition = sourceIsStep
+        });
+
+        var batch = new ToolCallBatch
+        {
+            Calls       = [new ToolCall { Tool = "AddLink", Params = prms }],
+            Explanation = $"Add link {sourceId} → {targetId}"
+        };
+
+        var result = _toolCallExecutor.Execute(batch);
+        if (result.Success)
+            LoadFrom(_document);
+
+        ResetDrag();
+    }
+
+    /// <summary>Cancels any in-progress drag gesture and hides the ghost line.</summary>
+    public void ResetDrag()
+    {
+        ActiveDrag       = null;
+        GhostLineVisible = false;
     }
 
     private void OnExternalElementSelected(object? payload)

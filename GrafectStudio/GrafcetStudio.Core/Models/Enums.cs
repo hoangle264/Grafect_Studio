@@ -22,3 +22,6 @@ public enum VariableKind
 
 /// <summary>IEC 61131-3 Program Organisation Unit type for code generation output.</summary>
 public enum PouType { Program, FunctionBlock }
+
+/// <summary>Interaction mode of the GRAFCET canvas.</summary>
+public enum CanvasMode { Select, Connect }

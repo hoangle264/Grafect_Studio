@@ -39,6 +39,7 @@ public class ToolCallFactory
         "AddVariable"      => CreateAddVariable(call.Params),
         "RemoveVariable"   => CreateRemoveVariable(call.Params),
         "ModifyVariable"   => CreateModifyVariable(call.Params),
+        "AddLink"          => CreateAddLink(call.Params),
         "RemoveLink"       => CreateRemoveLink(call.Params),
         _                  => throw new ArgumentException($"Unknown tool: '{call.Tool}'.")
     };
@@ -101,6 +102,12 @@ public class ToolCallFactory
 
     // ── Link factories ────────────────────────────────────────────────────────
 
+    private static AddLinkCommand CreateAddLink(JsonElement p)
+    {
+        var dto = Deserialize<AddLinkParams>(p);
+        return new AddLinkCommand(dto.SourceId, dto.TargetId, dto.IsStepToTransition);
+    }
+
     private static RemoveLinkCommand CreateRemoveLink(JsonElement p)
     {
         var dto = Deserialize<RemoveLinkParams>(p);
@@ -162,6 +169,8 @@ public class ToolCallFactory
         int Id, string? Condition, int FromStepId, int ToStepId);
 
     private sealed record RemoveTransitionParams(int TransitionId);
+
+    private sealed record AddLinkParams(int SourceId, int TargetId, bool IsStepToTransition);
 
     private sealed record RemoveLinkParams(int SourceId, int TargetId, bool IsStepToTransition);
 
