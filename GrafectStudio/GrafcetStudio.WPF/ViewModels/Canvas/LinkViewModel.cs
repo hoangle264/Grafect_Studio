@@ -12,14 +12,34 @@ public class LinkViewModel : BindableBase
     private double _startY;
     private double _endX;
     private double _endY;
+    private bool   _isSelected;
 
-    public LinkViewModel(double startX, double startY, double endX, double endY)
+    public LinkViewModel(
+        double startX, double startY, double endX, double endY,
+        int sourceId, int targetId, bool isStepToTransition)
     {
         _startX = startX;
         _startY = startY;
         _endX   = endX;
         _endY   = endY;
+
+        SourceId           = sourceId;
+        TargetId           = targetId;
+        IsStepToTransition = isStepToTransition;
     }
+
+    // ── Identity (immutable) ──────────────────────────────────────────────────
+
+    /// <summary>Id of the source element this link originates from.</summary>
+    public int SourceId { get; }
+
+    /// <summary>Id of the target element this link points to.</summary>
+    public int TargetId { get; }
+
+    /// <summary>True when the link goes Step → Transition; false for Transition → Step.</summary>
+    public bool IsStepToTransition { get; }
+
+    // ── Mutable geometry ──────────────────────────────────────────────────────
 
     /// <summary>X coordinate of the arrow origin point.</summary>
     public double StartX
@@ -76,6 +96,15 @@ public class LinkViewModel : BindableBase
             }
         }
     }
+
+    /// <summary>True when this link is the currently selected canvas element.</summary>
+    public bool IsSelected
+    {
+        get => _isSelected;
+        set => SetProperty(ref _isSelected, value);
+    }
+
+    // ── Computed geometry ─────────────────────────────────────────────────────
 
     /// <summary>WPF path geometry string for the orthogonal (right-angle) link body.</summary>
     public string LinePath

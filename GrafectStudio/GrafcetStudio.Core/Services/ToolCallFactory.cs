@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using GrafcetStudio.Core.Commands;
+using GrafcetStudio.Core.Commands.Links;
 using GrafcetStudio.Core.Commands.Steps;
 using GrafcetStudio.Core.Commands.Transitions;
 using GrafcetStudio.Core.Commands.Variables;
@@ -38,6 +39,7 @@ public class ToolCallFactory
         "AddVariable"      => CreateAddVariable(call.Params),
         "RemoveVariable"   => CreateRemoveVariable(call.Params),
         "ModifyVariable"   => CreateModifyVariable(call.Params),
+        "RemoveLink"       => CreateRemoveLink(call.Params),
         _                  => throw new ArgumentException($"Unknown tool: '{call.Tool}'.")
     };
 
@@ -97,6 +99,14 @@ public class ToolCallFactory
         return new ModifyTransitionCommand(dto.TransitionId, dto.Condition, dto.FromStepId, dto.ToStepId);
     }
 
+    // ── Link factories ────────────────────────────────────────────────────────
+
+    private static RemoveLinkCommand CreateRemoveLink(JsonElement p)
+    {
+        var dto = Deserialize<RemoveLinkParams>(p);
+        return new RemoveLinkCommand(dto.SourceId, dto.TargetId, dto.IsStepToTransition);
+    }
+
     // ── Variable factories ────────────────────────────────────────────────────
 
     private static AddVariableCommand CreateAddVariable(JsonElement p)
@@ -152,6 +162,8 @@ public class ToolCallFactory
         int Id, string? Condition, int FromStepId, int ToStepId);
 
     private sealed record RemoveTransitionParams(int TransitionId);
+
+    private sealed record RemoveLinkParams(int SourceId, int TargetId, bool IsStepToTransition);
 
     private sealed record ModifyTransitionParams(
         int TransitionId, string? Condition, int? FromStepId, int? ToStepId);

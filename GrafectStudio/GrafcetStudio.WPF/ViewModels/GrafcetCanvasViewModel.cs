@@ -59,6 +59,10 @@ public class GrafcetCanvasViewModel : BindableBase, INavigationAware
         DropElementCommand   = new DelegateCommand<DropPayload>(ExecuteDrop);
         MoveElementCommand   = new DelegateCommand<MovePayload>(ExecuteMove);
         CancelLinkCommand    = new DelegateCommand(ExecuteCancelLink);
+
+        eventAggregator
+            .GetEvent<ElementSelectedEvent>()
+            .Subscribe(OnExternalElementSelected, ThreadOption.UIThread);
     }
 
     // ── Collections ───────────────────────────────────────────────────────────
@@ -91,12 +95,14 @@ public class GrafcetCanvasViewModel : BindableBase, INavigationAware
             if (!SetProperty(ref _selectedElement, value)) return;
 
             // Deselect previous element
-            if (previous is StepViewModel prevStep)       prevStep.IsSelected = false;
+            if (previous is StepViewModel prevStep)            prevStep.IsSelected = false;
             else if (previous is TransitionViewModel prevTrans) prevTrans.IsSelected = false;
+            else if (previous is LinkViewModel prevLink)        prevLink.IsSelected  = false;
 
             // Select new element
-            if (value is StepViewModel step)            step.IsSelected = true;
+            if (value is StepViewModel step)             step.IsSelected = true;
             else if (value is TransitionViewModel trans) trans.IsSelected = true;
+            else if (value is LinkViewModel link)        link.IsSelected  = true;
 
             _eventAggregator.GetEvent<ElementSelectedEvent>().Publish(value);
         }
@@ -153,6 +159,20 @@ public class GrafcetCanvasViewModel : BindableBase, INavigationAware
             {
                 Calls       = [new ToolCall { Tool = "RemoveTransition", Params = prms }],
                 Explanation = $"Delete transition {trans.Id}"
+            };
+        }
+        else if (_selectedElement is LinkViewModel linkVm)
+        {
+            var prms = JsonSerializer.SerializeToElement(new
+            {
+                sourceId           = linkVm.SourceId,
+                targetId           = linkVm.TargetId,
+                isStepToTransition = linkVm.IsStepToTransition
+            });
+            batch = new ToolCallBatch
+            {
+                Calls       = [new ToolCall { Tool = "RemoveLink", Params = prms }],
+                Explanation = $"Delete link {linkVm.SourceId} → {linkVm.TargetId}"
             };
         }
         else return;
@@ -335,6 +355,12 @@ public class GrafcetCanvasViewModel : BindableBase, INavigationAware
         SelectedElement = null;
     }
 
+    private void OnExternalElementSelected(object? payload)
+    {
+        if (payload is not null || _document is null) return;
+        LoadFrom(_document);
+    }
+
     // ── Document loading ──────────────────────────────────────────────────────
 
     /// <summary>
@@ -348,7 +374,13 @@ public class GrafcetCanvasViewModel : BindableBase, INavigationAware
         Steps.Clear();
         Transitions.Clear();
         Links.Clear();
-        SelectedElement = null;
+
+        // Bypass the property setter so we don't republish ElementSelectedEvent
+        // (which would trigger OnExternalElementSelected and loop back into LoadFrom).
+        if (_selectedElement is StepViewModel sel1)       sel1.IsSelected = false;
+        else if (_selectedElement is TransitionViewModel sel2) sel2.IsSelected = false;
+        _selectedElement = null;
+        RaisePropertyChanged(nameof(SelectedElement));
 
         // Build step ViewModels and an id→vm lookup
         var stepMap = new Dictionary<int, StepViewModel>(doc.Steps.Count);
@@ -441,7 +473,8 @@ public class GrafcetCanvasViewModel : BindableBase, INavigationAware
             }
         }
 
-        return new LinkViewModel(startX, startY, endX, endY);
+        return new LinkViewModel(startX, startY, endX, endY,
+            link.SourceId, link.TargetId, link.IsStepToTransition);
     }
 
     /// <summary>

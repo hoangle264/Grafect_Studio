@@ -40,8 +40,8 @@
                     </DrawingBrush>
                 </Grid.Background>
 
-                <!-- Layer 1: Links (arrows) — non-interactive -->
-                <ItemsControl ItemsSource="{Binding Links}" IsHitTestVisible="False">
+                <!-- Layer 1: Links (arrows) — selectable and deletable -->
+                <ItemsControl ItemsSource="{Binding Links}" IsHitTestVisible="True">
                     <ItemsControl.ItemsPanel>
                         <ItemsPanelTemplate>
                             <Canvas/>
@@ -50,15 +50,31 @@
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
                             <Canvas>
-                                <Path Data="{Binding LinePath}"
+                                <Canvas.InputBindings>
+                                    <MouseBinding MouseAction="LeftClick"
+                                                  Command="{Binding DataContext.SelectElementCommand,
+                                                      RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                  CommandParameter="{Binding}"/>
+                                </Canvas.InputBindings>
+                                <Path x:Name="LinkPath"
+                                      Data="{Binding LinePath}"
                                       Stroke="{StaticResource LinkLineColorBrush}"
                                       StrokeThickness="1.5"
                                       Fill="Transparent"/>
-                                <Path Data="{Binding ArrowGeometry}"
+                                <Path x:Name="ArrowPath"
+                                      Data="{Binding ArrowGeometry}"
                                       Fill="{StaticResource LinkLineColorBrush}"
                                       Stroke="{StaticResource LinkLineColorBrush}"
                                       StrokeThickness="1"/>
                             </Canvas>
+                            <DataTemplate.Triggers>
+                                <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                                    <Setter TargetName="LinkPath"  Property="Stroke"          Value="{StaticResource AccentPrimaryBrush}"/>
+                                    <Setter TargetName="LinkPath"  Property="StrokeThickness" Value="2.5"/>
+                                    <Setter TargetName="ArrowPath" Property="Fill"            Value="{StaticResource AccentPrimaryBrush}"/>
+                                    <Setter TargetName="ArrowPath" Property="Stroke"          Value="{StaticResource AccentPrimaryBrush}"/>
+                                </DataTrigger>
+                            </DataTemplate.Triggers>
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>

@@ -13,7 +13,8 @@ public class ToolCallExecutor
     [
         "AddStep", "RemoveStep", "ModifyStep",
         "AddTransition", "RemoveTransition", "ModifyTransition",
-        "AddVariable", "RemoveVariable", "ModifyVariable"
+        "AddVariable", "RemoveVariable", "ModifyVariable",
+        "RemoveLink"
     ];
 
     private readonly GrafcetDocument _document;

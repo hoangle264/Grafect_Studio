@@ -96,12 +96,28 @@ public partial class GrafcetCanvasView : UserControl
 
     // ── Helper ────────────────────────────────────────────────────────────────
 
+    protected override void OnPreviewMouseDown(MouseButtonEventArgs e)
+    {
+        base.OnPreviewMouseDown(e);
+        // Ensure the UserControl has keyboard focus after any click on the canvas,
+        // including clicks on links (which use MouseBinding, not code-behind events).
+        this.Focus();
+    }
+
     protected override void OnPreviewKeyDown(KeyEventArgs e)
     {
         base.OnPreviewKeyDown(e);
-        if (e.Key == Key.Escape && DataContext is GrafcetCanvasViewModel vm && vm.IsLinkMode)
+
+        if (DataContext is not GrafcetCanvasViewModel vm) return;
+
+        if (e.Key == Key.Escape && vm.IsLinkMode)
         {
             vm.CancelLinkCommand.Execute();
+            e.Handled = true;
+        }
+        else if (e.Key == Key.Delete && vm.DeleteCommand.CanExecute())
+        {
+            vm.DeleteCommand.Execute();
             e.Handled = true;
         }
     }
