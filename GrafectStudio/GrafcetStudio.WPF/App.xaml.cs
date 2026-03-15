@@ -31,9 +31,11 @@ public partial class App : PrismApplication
         containerRegistry.RegisterSingleton<CodeGenerationService>();
 
         // ── Navigation registrations ──────────────────────────────────────────
+        containerRegistry.RegisterForNavigation<ToolboxView,        ToolboxViewModel>();
         containerRegistry.RegisterForNavigation<GrafcetCanvasView,  GrafcetCanvasViewModel>();
         containerRegistry.RegisterForNavigation<VariableTableView,  VariableTableViewModel>();
         containerRegistry.RegisterForNavigation<CodeOutputView,     CodeOutputViewModel>();
+        containerRegistry.RegisterForNavigation<PropertiesView,     PropertiesViewModel>();
     }
 
     protected override void OnInitialized()
@@ -45,10 +47,12 @@ public partial class App : PrismApplication
         codeService.Register(new KeyenceMnemonicGenerator());
         codeService.Register(new StructuredTextGenerator());
 
-        // Navigate each tab region to its initial view
+        // Navigate each region to its initial view
         var regionManager = Container.Resolve<IRegionManager>();
-        regionManager.RequestNavigate("CanvasRegion",    nameof(GrafcetCanvasView));
-        regionManager.RequestNavigate("VariablesRegion", nameof(VariableTableView));
-        regionManager.RequestNavigate("CodeRegion",      nameof(CodeOutputView));
+        regionManager.RequestNavigate("ToolboxRegion",     nameof(ToolboxView));
+        regionManager.RequestNavigate("CanvasRegion",      nameof(GrafcetCanvasView));
+        regionManager.RequestNavigate("VariablesRegion",   nameof(VariableTableView));
+        regionManager.RequestNavigate("CodeRegion",        nameof(CodeOutputView));
+        regionManager.RequestNavigate("PropertiesRegion",  nameof(PropertiesView));
     }
 }

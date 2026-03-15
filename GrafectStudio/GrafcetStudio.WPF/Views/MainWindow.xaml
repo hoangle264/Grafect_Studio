@@ -84,9 +84,7 @@
                         <avd:LayoutAnchorable Title="Toolbox"
                                               CanClose="False"
                                               CanHide="False">
-                            <TextBlock Text="Toolbox panel"
-                                       Margin="12"
-                                       Foreground="{StaticResource TextSecondaryBrush}"/>
+                            <ContentControl prism:RegionManager.RegionName="ToolboxRegion"/>
                         </avd:LayoutAnchorable>
                     </avd:LayoutAnchorablePane>
 
@@ -119,9 +117,7 @@
 
                         <avd:LayoutAnchorable Title="Properties"
                                               CanClose="False">
-                            <TextBlock Text="Properties panel"
-                                       Margin="12"
-                                       Foreground="{StaticResource TextSecondaryBrush}"/>
+                            <ContentControl prism:RegionManager.RegionName="PropertiesRegion"/>
                         </avd:LayoutAnchorable>
                     </avd:LayoutAnchorablePane>
 

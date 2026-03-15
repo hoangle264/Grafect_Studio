@@ -1,5 +1,8 @@
 using System.Collections.ObjectModel;
 using System.Text.Json;
+using GrafcetStudio.Core.Commands;
+using GrafcetStudio.Core.Commands.Steps;
+using GrafcetStudio.Core.Commands.Transitions;
 using GrafcetStudio.Core.Models.Document;
 using GrafcetStudio.Core.Services;
 using GrafcetStudio.WPF.Events;
@@ -28,6 +31,7 @@ public class GrafcetCanvasViewModel : BindableBase, INavigationAware
 
     private readonly IEventAggregator _eventAggregator;
     private readonly ToolCallExecutor _toolCallExecutor;
+    private readonly UndoRedoStack _undoRedoStack;
 
     private GrafcetDocument? _document;
     private double _zoom = 1.0;
@@ -35,16 +39,21 @@ public class GrafcetCanvasViewModel : BindableBase, INavigationAware
 
     public GrafcetCanvasViewModel(
         IEventAggregator eventAggregator,
-        ToolCallExecutor toolCallExecutor)
+        ToolCallExecutor toolCallExecutor,
+        GrafcetDocument document,
+        UndoRedoStack undoRedoStack)
     {
         _eventAggregator  = eventAggregator;
         _toolCallExecutor = toolCallExecutor;
+        _undoRedoStack    = undoRedoStack;
+        _document         = document;
 
         DeleteCommand = new DelegateCommand(ExecuteDelete, () => SelectedElement is not null)
             .ObservesProperty(() => SelectedElement);
 
         ZoomCommand          = new DelegateCommand<string>(ExecuteZoom);
         SelectElementCommand = new DelegateCommand<object?>(element => SelectedElement = element);
+        DropElementCommand   = new DelegateCommand<DropPayload>(ExecuteDrop);
     }
 
     // ── Collections ───────────────────────────────────────────────────────────
@@ -99,6 +108,9 @@ public class GrafcetCanvasViewModel : BindableBase, INavigationAware
     /// <summary>Selects a step or transition by clicking on it in the canvas.</summary>
     public DelegateCommand<object?> SelectElementCommand { get; }
 
+    /// <summary>Creates a GRAFCET element at the drop coordinates supplied by <see cref="DropPayload"/>.</summary>
+    public DelegateCommand<DropPayload> DropElementCommand { get; }
+
     // ── Command handlers ──────────────────────────────────────────────────────
 
     private void ExecuteDelete()
@@ -140,6 +152,67 @@ public class GrafcetCanvasViewModel : BindableBase, INavigationAware
             "-" => Zoom - ZOOM_STEP,
             _   => Zoom
         };
+    }
+
+    private void ExecuteDrop(DropPayload? payload)
+    {
+        if (payload is null || _document is null) return;
+
+        switch (payload.ElementType)
+        {
+            case "Step":
+            case "InitialStep":
+            {
+                bool isInitial = payload.ElementType == "InitialStep";
+
+                // GRAFCET rule: at most one initial step
+                if (isInitial && _document.Steps.Any(s => s.IsInitial))
+                {
+                    System.Diagnostics.Debug.WriteLine(
+                        "[DropElement] Warning: document already has an initial step — drop ignored.");
+                    return;
+                }
+
+                int id   = _document.NextStepId();
+                var step = new GrafcetStep
+                {
+                    Id        = id,
+                    Name      = $"Step {id}",
+                    IsInitial = isInitial,
+                    X         = payload.X,
+                    Y         = payload.Y
+                };
+
+                _undoRedoStack.Push(new AddStepCommand(step), _document);
+                LoadFrom(_document);
+                SelectedElement = Steps.FirstOrDefault(s => s.Id == step.Id);
+                break;
+            }
+
+            case "Transition":
+            {
+                int id         = _document.NextTransitionId();
+                var transition = new GrafcetTransition
+                {
+                    Id         = id,
+                    Condition  = "TRUE",
+                    FromStepId = 0,
+                    ToStepId   = 0
+                };
+
+                _undoRedoStack.Push(new AddTransitionCommand(transition), _document);
+                LoadFrom(_document);
+                SelectedElement = Transitions.FirstOrDefault(t => t.Id == transition.Id);
+                break;
+            }
+
+            case "Link":
+            case "ParallelBranch":
+            case "SelectiveBranch":
+                System.Diagnostics.Debug.WriteLine(
+                    $"[DropElement] Warning: '{payload.ElementType}' not implemented yet.");
+                break;
+        }
     }
 
     // ── Document loading ──────────────────────────────────────────────────────

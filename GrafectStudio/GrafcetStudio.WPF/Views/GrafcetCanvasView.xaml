@@ -8,7 +8,10 @@
         <!-- Scrollable canvas area -->
         <ScrollViewer HorizontalScrollBarVisibility="Auto"
                       VerticalScrollBarVisibility="Auto">
-            <Grid Width="3000" Height="3000">
+            <Grid Width="3000" Height="3000"
+                  AllowDrop="True"
+                  Drop="OnCanvasDrop"
+                  DragOver="OnCanvasDragOver">
                 <!-- Zoom transform applied to entire canvas grid -->
                 <Grid.LayoutTransform>
                     <ScaleTransform ScaleX="{Binding Zoom}" ScaleY="{Binding Zoom}"/>

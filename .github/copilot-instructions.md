@@ -1,63 +1,113 @@
 # GRAFCET Studio — Copilot Instructions
 
-## Stack
-- C# .NET 10, WPF, **Prism 9 + DryIoc**
-- ViewModel: `BindableBase`, `DelegateCommand`, `SetProperty(ref _field, value)`
-- DI: `PrismApplication` + `IContainerRegistry`
-- Navigation: `IRegionManager` + `INavigationAware`
-- Messaging: `IEventAggregator` + `PubSubEvent<T>`
+## Stack (KHÔNG thay đổi)
+- C# 12, .NET 10, WPF, Prism 9 + DryIoc
+- MahApps.Metro 2.4 + Dirkster.AvalonDock 4.72 (VS2013 theme)
+- ViewModel: BindableBase, DelegateCommand, SetProperty()
+- Navigation: IRegionManager | Messaging: IEventAggregator
+- Testing: xUnit | Serialization: System.Text.Json (.gfx)
 
-## Kiến trúc
+---
+
+## Cấu trúc Solution
 ```
-GrafcetStudio.Core   — Model, Commands, CodeGeneration, Services (không phụ thuộc WPF)
+GrafcetStudio.Core   — Model, Commands, CodeGeneration, Services
 GrafcetStudio.WPF    — Views, ViewModels, Resources
 GrafcetStudio.Tests  — xUnit
 ```
 
-## Data Model chính
-`GrafcetDocument` chứa: `VariableTable`, `List<GrafcetStep>`, `List<GrafcetTransition>`, `List<GrafcetBranch>`, `List<GrafcetLink>`
+---
 
-`VariableDeclaration`: `Name`, `PlcDataType`, `VariableKind`, `Address`, `InitValue`, `Comment`, `Group`
+## Layout UI
+```
+┌──────────┬─────────────────┬──────────────┐
+│ Toolbox  │  Canvas         │ Variables    │
+│ 200px    │  (CanvasRegion) │ Properties   │
+│          ├─────────────────┴──────────────┤
+│          │  Code Output (220px)           │
+└──────────┴────────────────────────────────┘
+```
+Prism Regions: CanvasRegion | VariablesRegion | PropertiesRegion | CodeRegion | ToolboxRegion
 
-`GrafcetStep`: `Id`, `Name`, `IsInitial`, `List<GrafcetAction>`, `X`, `Y`
+---
 
-`GrafcetAction`: `ActionQualifier` (N/S/R/P/L/D), `Variable` (tên logic hoặc địa chỉ), `Parameter`
+## Data Model
+```
+GrafcetDocument → Steps, Transitions, Branches, Links, VariableTable
+GrafcetStep     → Id, Name, IsInitial, X, Y, Actions
+GrafcetTransition → Id, Condition(tên logic), FromStepId, ToStepId
+GrafcetAction   → Qualifier(N/S/R/P/L/D), Variable, Parameter
+VariableDeclaration → Name(logic), Address(hardware), DataType, Kind
+```
+Condition dùng tên logic → VariableResolver resolve trước khi gen code.
 
-`GrafcetTransition`: `Id`, `Condition` (biểu thức dùng tên logic), `FromStepId`, `ToStepId`
+---
 
-## Code Generation — Strategy Pattern
-Mọi generator implement `ICodeGenerator` (`TargetName`, `FileExtension`, `Generate()`).
-Đăng ký qua `CodeGenerationService.Register()` — không sửa code hiện tại khi thêm target mới.
-Targets hiện có: `"KeyenceMnemonic"` (.mnm, không comment), `"StructuredText"` (.st, IEC 61131-3).
-`VariableResolver` resolve tên logic → địa chỉ phần cứng trước khi sinh code.
+## Toolbox Components
+| ElementType | Model |
+|---|---|
+| Step | GrafcetStep (IsInitial=false) |
+| InitialStep | GrafcetStep (IsInitial=true) |
+| Transition | GrafcetTransition |
+| Link | GrafcetLink |
+| ParallelBranch | GrafcetBranch (Parallel) |
+| SelectiveBranch | GrafcetBranch (Selective) |
 
-## Undo/Redo
-Mọi thao tác implement `IGrafcetCommand` (`Execute`, `Undo`, `Description`).
-Nhiều tool call gom vào `CompositeCommand` → 1 undo entry duy nhất.
+---
 
-## Agentic AI — JSON Tool Call
-AI trả về JSON, C# thực thi. Không sinh C# code trực tiếp.
-Tools: `AddStep`, `RemoveStep`, `ModifyStep`, `AddTransition`, `ModifyTransition`, `RemoveTransition`, `AddVariable`, `ModifyVariable`, `RemoveVariable`, `AddParallelBranch`, `AddSelectiveBranch`, `RemoveBranch`, `GenerateCode`.
+## Quy tắc bắt buộc
 
-## UI — Light Professional (WPF thuần)
-- Font: Segoe UI, code dùng Consolas
-- Màu: nền `#FFFFFF`/`#F5F5F5`, text `#1E1E1E`, accent `#0078D4` (VS Blue), border `#CCCCCC`
-- **Không hardcode màu/font** — dùng `StaticResource` từ `Resources/Colors.xaml`
-- Style định nghĩa trong `Resources/Controls.xaml`, không inline
-- Icon button: `Width=28`, `Height=28`, `Cursor="Hand"`, có `ToolTip`
-- `IsEnabled` bind CanExecute — không ẩn/hiện control, chỉ disable
+**ViewModel**
+```csharp
+// ĐÚNG
+public string Name
+{
+    get => _name;
+    set => SetProperty(ref _name, value);
+}
+SaveCommand = new DelegateCommand(ExecuteSave, () => HasChanges)
+    .ObservesProperty(() => HasChanges);
+```
+
+**XAML**
+```xml
+
+
+
+
+
+
+```
+
+**Command / Undo**
+- Mọi thay đổi document qua `UndoRedoStack.Push(command, document)`
+- KHÔNG mutate GrafcetDocument trực tiếp từ ViewModel
+- Dùng `CompositeCommand` khi action cần nhiều bước
+
+**Drag & Drop**
+- Kéo từ Toolbox → Canvas dùng `DragDrop.DoDragDrop()`
+- Canvas nhận drop → tính X/Y → gọi `ToolCallExecutor`
+- KHÔNG tạo element trực tiếp, phải qua Command
+
+**Code Generation**
+- Mỗi generator implement `ICodeGenerator`
+- Đăng ký trong `App.xaml.cs` qua `CodeGenerationService.Register()`
+- Layout AvalonDock lưu tại `%AppData%\GrafcetStudio\layout.xml`
+
+---
 
 ## Naming
-```
-Classes/Properties : PascalCase
-Fields             : _camelCase
-Interfaces         : IPascalCase
-Events (Prism)     : PascalCase + "Event"  (vd: StepSelectedEvent)
-Constants          : UPPER_CASE
-```
+| Loại | Convention |
+|---|---|
+| Private field | _camelCase |
+| Property / Command | PascalCase |
+| Command suffix | ...Command |
+| View / ViewModel | ...View / ...ViewModel |
 
-## Quy tắc chung
-- Validate input trước khi Execute command
-- Unresolved variable → pass-through + ghi `Warnings`, không fail
-- Initial step: đúng 1, không cho xóa
-- Giải thích bằng **tiếng Việt**, comment code bằng **tiếng Anh**
+---
+
+## Checklist khi sinh code mới
+1. Đúng project và namespace
+2. ViewModel kế thừa BindableBase
+3. Màu từ Colors.xaml, style từ Controls.xaml
+4. Build sau khi tạo xong
