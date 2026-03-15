@@ -1,0 +1,39 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Background -->
+    <SolidColorBrush x:Key="BackgroundPrimaryBrush"   Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="BackgroundSecondaryBrush" Color="#F5F5F5"/>
+    <SolidColorBrush x:Key="BackgroundTertiaryBrush"  Color="#EBEBEB"/>
+    <SolidColorBrush x:Key="BackgroundHoverBrush"     Color="#E8E8E8"/>
+    <SolidColorBrush x:Key="BackgroundSelectedBrush"  Color="#CCE4F7"/>
+    <SolidColorBrush x:Key="CanvasBackgroundBrush"    Color="#FAFAFA"/>
+
+    <!-- Text -->
+    <SolidColorBrush x:Key="TextPrimaryBrush"         Color="#1E1E1E"/>
+    <SolidColorBrush x:Key="TextSecondaryBrush"       Color="#6D6D6D"/>
+    <SolidColorBrush x:Key="TextDisabledBrush"        Color="#AAAAAA"/>
+
+    <!-- Border -->
+    <SolidColorBrush x:Key="BorderDefaultBrush"       Color="#CCCCCC"/>
+    <SolidColorBrush x:Key="BorderFocusBrush"         Color="#0078D4"/>
+    <SolidColorBrush x:Key="BorderSeparatorBrush"     Color="#E0E0E0"/>
+
+    <!-- Accent (VS Blue) -->
+    <SolidColorBrush x:Key="AccentPrimaryBrush"       Color="#0078D4"/>
+    <SolidColorBrush x:Key="AccentHoverBrush"         Color="#106EBE"/>
+    <SolidColorBrush x:Key="AccentForegroundBrush"    Color="#FFFFFF"/>
+
+    <!-- GRAFCET diagram elements -->
+    <SolidColorBrush x:Key="StepFillBrush"            Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="StepBorderBrush"          Color="#404040"/>
+    <SolidColorBrush x:Key="StepInitialBorderBrush"   Color="#0078D4"/>
+    <SolidColorBrush x:Key="TransitionFillBrush"      Color="#404040"/>
+    <SolidColorBrush x:Key="LinkLineColorBrush"       Color="#404040"/>
+
+    <!-- Status -->
+    <SolidColorBrush x:Key="StatusErrorBrush"         Color="#D32F2F"/>
+    <SolidColorBrush x:Key="StatusWarningBrush"       Color="#F57C00"/>
+    <SolidColorBrush x:Key="StatusSuccessBrush"       Color="#388E3C"/>
+
+</ResourceDictionary>

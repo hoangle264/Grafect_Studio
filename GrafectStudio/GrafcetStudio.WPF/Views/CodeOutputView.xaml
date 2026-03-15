@@ -1,0 +1,45 @@
+<UserControl x:Class="GrafcetStudio.WPF.Views.CodeOutputView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:prism="http://prismlibrary.com/"
+             prism:ViewModelLocator.AutoWireViewModel="True">
+
+    <DockPanel>
+        <!-- Toolbar: target selector + generation actions -->
+        <ToolBar DockPanel.Dock="Top"
+                 Background="{StaticResource BackgroundTertiaryBrush}">
+
+            <ComboBox ItemsSource="{Binding AvailableTargets}"
+                      SelectedItem="{Binding SelectedTarget}"
+                      Width="160"
+                      VerticalContentAlignment="Center"/>
+
+            <Separator/>
+
+            <Button Style="{StaticResource PrimaryButton}"
+                    Command="{Binding GenerateCommand}"
+                    Content="Generate"
+                    Width="80"/>
+
+            <Separator/>
+
+            <Button Style="{StaticResource IconButton}"
+                    Command="{Binding CopyCommand}"
+                    ToolTip="Copy to clipboard">
+                <TextBlock Text="⎘" FontSize="13"
+                           Foreground="{StaticResource TextPrimaryBrush}"/>
+            </Button>
+
+            <Button Style="{StaticResource IconButton}"
+                    Command="{Binding SaveCommand}"
+                    ToolTip="Save to file">
+                <TextBlock Text="💾" FontSize="13"
+                           Foreground="{StaticResource TextPrimaryBrush}"/>
+            </Button>
+        </ToolBar>
+
+        <!-- Generated code display area -->
+        <TextBox Style="{StaticResource CodeTextBox}"
+                 Text="{Binding GeneratedCode, Mode=OneWay}"/>
+    </DockPanel>
+</UserControl>

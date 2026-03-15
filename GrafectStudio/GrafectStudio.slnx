@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="GrafcetStudio.Core/GrafcetStudio.Core.csproj" />
+  <Project Path="GrafcetStudio.WPF/GrafcetStudio.WPF.csproj" />
+  <Project Path="GrafcetStudio.Tests/GrafcetStudio.Tests.csproj" />
+</Solution>

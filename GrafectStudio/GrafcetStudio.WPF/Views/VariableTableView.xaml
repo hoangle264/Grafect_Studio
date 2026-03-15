@@ -1,0 +1,104 @@
+<UserControl x:Class="GrafcetStudio.WPF.Views.VariableTableView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:prism="http://prismlibrary.com/"
+             xmlns:sys="clr-namespace:System;assembly=System.Runtime"
+             xmlns:models="clr-namespace:GrafcetStudio.Core.Models;assembly=GrafcetStudio.Core"
+             prism:ViewModelLocator.AutoWireViewModel="True">
+
+    <UserControl.Resources>
+        <!-- Enum value sources for ComboBox columns -->
+        <ObjectDataProvider x:Key="PlcDataTypes"
+                            MethodName="GetValues"
+                            ObjectType="{x:Type sys:Enum}">
+            <ObjectDataProvider.MethodParameters>
+                <x:Type TypeName="models:PlcDataType"/>
+            </ObjectDataProvider.MethodParameters>
+        </ObjectDataProvider>
+
+        <ObjectDataProvider x:Key="VariableKinds"
+                            MethodName="GetValues"
+                            ObjectType="{x:Type sys:Enum}">
+            <ObjectDataProvider.MethodParameters>
+                <x:Type TypeName="models:VariableKind"/>
+            </ObjectDataProvider.MethodParameters>
+        </ObjectDataProvider>
+    </UserControl.Resources>
+
+    <DockPanel>
+        <!-- Toolbar: CRUD commands + filter -->
+        <ToolBar DockPanel.Dock="Top"
+                 Background="{StaticResource BackgroundTertiaryBrush}">
+            <Button Style="{StaticResource IconButton}"
+                    Command="{Binding AddVariableCommand}"
+                    ToolTip="Add variable">
+                <TextBlock Text="+" FontSize="14" FontWeight="Bold"
+                           Foreground="{StaticResource TextPrimaryBrush}"/>
+            </Button>
+            <Button Style="{StaticResource IconButton}"
+                    Command="{Binding RemoveVariableCommand}"
+                    ToolTip="Remove selected variable">
+                <TextBlock Text="✕" FontSize="11"
+                           Foreground="{StaticResource TextPrimaryBrush}"/>
+            </Button>
+            <Button Style="{StaticResource IconButton}"
+                    Command="{Binding DuplicateVariableCommand}"
+                    ToolTip="Duplicate selected variable">
+                <TextBlock Text="⧉" FontSize="13"
+                           Foreground="{StaticResource TextPrimaryBrush}"/>
+            </Button>
+            <Separator/>
+            <TextBlock Text="Filter Group:"
+                       VerticalAlignment="Center"
+                       Foreground="{StaticResource TextSecondaryBrush}"
+                       FontFamily="Segoe UI"
+                       FontSize="12"
+                       Margin="4,0,4,0"/>
+            <TextBox Width="120"
+                     Text="{Binding FilterGroup, UpdateSourceTrigger=PropertyChanged}"
+                     VerticalContentAlignment="Center"
+                     FontFamily="Segoe UI"
+                     FontSize="12"/>
+        </ToolBar>
+
+        <!-- Variable table -->
+        <DataGrid ItemsSource="{Binding FilteredVariables}"
+                  SelectedItem="{Binding SelectedVariable, Mode=TwoWay}"
+                  CanUserAddRows="False"
+                  CanUserDeleteRows="False"
+                  AutoGenerateColumns="False"
+                  SelectionMode="Single"
+                  AlternatingRowBackground="{StaticResource BackgroundSecondaryBrush}"
+                  GridLinesVisibility="Horizontal"
+                  HeadersVisibility="Column"
+                  HorizontalGridLinesBrush="{StaticResource BorderSeparatorBrush}"
+                  FontFamily="Segoe UI"
+                  FontSize="12">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Name"
+                                    Binding="{Binding Name, UpdateSourceTrigger=PropertyChanged}"
+                                    Width="*"/>
+                <DataGridComboBoxColumn Header="Type"
+                                        Width="90"
+                                        SelectedItemBinding="{Binding DataType, UpdateSourceTrigger=PropertyChanged}"
+                                        ItemsSource="{StaticResource PlcDataTypes}"/>
+                <DataGridComboBoxColumn Header="Kind"
+                                        Width="90"
+                                        SelectedItemBinding="{Binding Kind, UpdateSourceTrigger=PropertyChanged}"
+                                        ItemsSource="{StaticResource VariableKinds}"/>
+                <DataGridTextColumn Header="Address"
+                                    Binding="{Binding Address, UpdateSourceTrigger=PropertyChanged}"
+                                    Width="90"/>
+                <DataGridTextColumn Header="Init Value"
+                                    Binding="{Binding InitValue, UpdateSourceTrigger=PropertyChanged}"
+                                    Width="80"/>
+                <DataGridTextColumn Header="Comment"
+                                    Binding="{Binding Comment, UpdateSourceTrigger=PropertyChanged}"
+                                    Width="*"/>
+                <DataGridTextColumn Header="Group"
+                                    Binding="{Binding Group, UpdateSourceTrigger=PropertyChanged}"
+                                    Width="80"/>
+            </DataGrid.Columns>
+        </DataGrid>
+    </DockPanel>
+</UserControl>
