@@ -1,7 +1,7 @@
-<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
-    <!-- Background -->
+    <!-- Background — Light professional palette, aligned with VS2013 -->
     <SolidColorBrush x:Key="BackgroundPrimaryBrush"   Color="#FFFFFF"/>
     <SolidColorBrush x:Key="BackgroundSecondaryBrush" Color="#F5F5F5"/>
     <SolidColorBrush x:Key="BackgroundTertiaryBrush"  Color="#EBEBEB"/>
@@ -9,17 +9,17 @@
     <SolidColorBrush x:Key="BackgroundSelectedBrush"  Color="#CCE4F7"/>
     <SolidColorBrush x:Key="CanvasBackgroundBrush"    Color="#FAFAFA"/>
 
-    <!-- Text -->
+    <!-- Text — Foreground colors -->
     <SolidColorBrush x:Key="TextPrimaryBrush"         Color="#1E1E1E"/>
     <SolidColorBrush x:Key="TextSecondaryBrush"       Color="#6D6D6D"/>
     <SolidColorBrush x:Key="TextDisabledBrush"        Color="#AAAAAA"/>
 
-    <!-- Border -->
+    <!-- Border — Control edges -->
     <SolidColorBrush x:Key="BorderDefaultBrush"       Color="#CCCCCC"/>
     <SolidColorBrush x:Key="BorderFocusBrush"         Color="#0078D4"/>
     <SolidColorBrush x:Key="BorderSeparatorBrush"     Color="#E0E0E0"/>
 
-    <!-- Accent (VS Blue) -->
+    <!-- Accent — Primary interactive color (VS Blue) -->
     <SolidColorBrush x:Key="AccentPrimaryBrush"       Color="#0078D4"/>
     <SolidColorBrush x:Key="AccentHoverBrush"         Color="#106EBE"/>
     <SolidColorBrush x:Key="AccentForegroundBrush"    Color="#FFFFFF"/>
@@ -31,9 +31,13 @@
     <SolidColorBrush x:Key="TransitionFillBrush"      Color="#404040"/>
     <SolidColorBrush x:Key="LinkLineColorBrush"       Color="#404040"/>
 
-    <!-- Status -->
+    <!-- Status/Semantic colors -->
     <SolidColorBrush x:Key="StatusErrorBrush"         Color="#D32F2F"/>
     <SolidColorBrush x:Key="StatusWarningBrush"       Color="#F57C00"/>
     <SolidColorBrush x:Key="StatusSuccessBrush"       Color="#388E3C"/>
+
+    <!-- Xceed VS2013 integration — fallback keys for third-party components -->
+    <!-- These are referenced by Xceed controls and can be overridden here if needed -->
+    <!-- For now, using Xceed's defaults via the merged theme -->
 
 </ResourceDictionary>
