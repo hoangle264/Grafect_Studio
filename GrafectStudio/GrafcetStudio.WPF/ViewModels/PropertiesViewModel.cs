@@ -1,7 +1,6 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
+using System.Text.Json;
 using GrafcetStudio.Core.Commands;
-using GrafcetStudio.Core.Commands.Steps;
-using GrafcetStudio.Core.Commands.Transitions;
 using GrafcetStudio.Core.Models;
 using GrafcetStudio.Core.Models.Document;
 using GrafcetStudio.Core.Services;
@@ -21,56 +20,53 @@ namespace GrafcetStudio.WPF.ViewModels;
 /// </summary>
 public class PropertiesViewModel : BindableBase, INavigationAware
 {
-    private readonly IEventAggregator _eventAggregator;
-    private readonly GrafcetDocument  _document;
-    private readonly UndoRedoStack    _undoRedoStack;
+    private readonly IEventAggregator  _eventAggregator;
+    private readonly GrafcetDocument   _document;
+    private readonly ToolCallExecutor  _toolCallExecutor;
 
-    private bool _isStepSelected;
-    private bool _isTransitionSelected;
+    private bool    _isStepSelected;
+    private bool    _isTransitionSelected;
     private object? _selectedVm;   // cached StepViewModel or TransitionViewModel
 
     // ── Step backing fields ───────────────────────────────────────────────────
-    private int           _stepId;
-    private string        _stepName       = "";
-    private bool          _stepIsInitial;
-    private double        _stepX;
-    private double        _stepY;
-    private GrafcetAction? _selectedAction;
+    private int    _stepId;
+    private string _stepName      = "";
+    private bool   _stepIsInitial;
 
     // ── Transition backing fields ─────────────────────────────────────────────
     private int    _transitionId;
     private string _transitionCondition = "";
-    private int    _transitionFromStepId;
-    private int    _transitionToStepId;
+
+    // ── Actions ───────────────────────────────────────────────────────────────
+    private GrafcetActionViewModel? _selectedAction;
 
     public PropertiesViewModel(
-        IEventAggregator eventAggregator,
-        GrafcetDocument  document,
-        UndoRedoStack    undoRedoStack)
+        IEventAggregator  eventAggregator,
+        GrafcetDocument   document,
+        ToolCallExecutor  toolCallExecutor)
     {
-        _eventAggregator = eventAggregator;
-        _document        = document;
-        _undoRedoStack   = undoRedoStack;
+        _eventAggregator  = eventAggregator;
+        _document         = document;
+        _toolCallExecutor = toolCallExecutor;
 
-        StepActions = [];
+        Actions = [];
+
+        ApplyCommand = new DelegateCommand(ExecuteApply,
+                () => IsStepSelected || IsTransitionSelected)
+            .ObservesProperty(() => IsStepSelected)
+            .ObservesProperty(() => IsTransitionSelected);
+
+        CancelCommand       = new DelegateCommand(ExecuteCancel);
+        AddActionCommand    = new DelegateCommand(ExecuteAddAction);
+        RemoveActionCommand = new DelegateCommand<GrafcetActionViewModel>(ExecuteRemoveAction);
 
         eventAggregator
             .GetEvent<ElementSelectedEvent>()
             .Subscribe(OnElementSelected, ThreadOption.UIThread);
-
-        ApplyStepCommand = new DelegateCommand(ExecuteApplyStep, () => IsStepSelected)
-            .ObservesProperty(() => IsStepSelected);
-
-        ApplyTransitionCommand = new DelegateCommand(ExecuteApplyTransition, () => IsTransitionSelected)
-            .ObservesProperty(() => IsTransitionSelected);
-
-        AddActionCommand    = new DelegateCommand(ExecuteAddAction);
-        RemoveActionCommand = new DelegateCommand<GrafcetAction>(ExecuteRemoveAction);
     }
 
     // ── Step properties ───────────────────────────────────────────────────────
 
-    /// <summary>Id of the selected step (read-only).</summary>
     public int StepId
     {
         get => _stepId;
@@ -86,36 +82,11 @@ public class PropertiesViewModel : BindableBase, INavigationAware
     public bool StepIsInitial
     {
         get => _stepIsInitial;
-        set => SetProperty(ref _stepIsInitial, value);
+        private set => SetProperty(ref _stepIsInitial, value);
     }
-
-    public double StepX
-    {
-        get => _stepX;
-        set => SetProperty(ref _stepX, value);
-    }
-
-    public double StepY
-    {
-        get => _stepY;
-        set => SetProperty(ref _stepY, value);
-    }
-
-    /// <summary>Editable list of actions for the selected step.</summary>
-    public ObservableCollection<GrafcetAction> StepActions { get; }
-
-    public GrafcetAction? SelectedAction
-    {
-        get => _selectedAction;
-        set => SetProperty(ref _selectedAction, value);
-    }
-
-    public static IEnumerable<ActionQualifier> ActionQualifiers { get; } =
-        Enum.GetValues<ActionQualifier>();
 
     // ── Transition properties ─────────────────────────────────────────────────
 
-    /// <summary>Id of the selected transition (read-only).</summary>
     public int TransitionId
     {
         get => _transitionId;
@@ -128,17 +99,18 @@ public class PropertiesViewModel : BindableBase, INavigationAware
         set => SetProperty(ref _transitionCondition, value);
     }
 
-    public int TransitionFromStepId
+    // ── Actions ───────────────────────────────────────────────────────────────
+
+    public ObservableCollection<GrafcetActionViewModel> Actions { get; }
+
+    public GrafcetActionViewModel? SelectedAction
     {
-        get => _transitionFromStepId;
-        set => SetProperty(ref _transitionFromStepId, value);
+        get => _selectedAction;
+        set => SetProperty(ref _selectedAction, value);
     }
 
-    public int TransitionToStepId
-    {
-        get => _transitionToStepId;
-        set => SetProperty(ref _transitionToStepId, value);
-    }
+    public static IEnumerable<ActionQualifier> ActionQualifiers { get; } =
+        Enum.GetValues<ActionQualifier>();
 
     // ── Common properties ─────────────────────────────────────────────────────
 
@@ -166,17 +138,20 @@ public class PropertiesViewModel : BindableBase, INavigationAware
 
     // ── Commands ──────────────────────────────────────────────────────────────
 
-    /// <summary>Commits edited step properties to the document via undo/redo.</summary>
-    public DelegateCommand ApplyStepCommand { get; }
+    /// <summary>
+    /// Commits edited properties to the document via <see cref="ToolCallExecutor"/>
+    /// and triggers a canvas refresh. Enabled only when an element is selected.
+    /// </summary>
+    public DelegateCommand ApplyCommand { get; }
 
-    /// <summary>Commits edited transition properties to the document via undo/redo.</summary>
-    public DelegateCommand ApplyTransitionCommand { get; }
+    /// <summary>Reloads the current element''s data, discarding any unsaved edits.</summary>
+    public DelegateCommand CancelCommand { get; }
 
-    /// <summary>Adds a new default action to <see cref="StepActions"/>.</summary>
+    /// <summary>Adds a new default action row to <see cref="Actions"/>.</summary>
     public DelegateCommand AddActionCommand { get; }
 
-    /// <summary>Removes the given action from <see cref="StepActions"/>.</summary>
-    public DelegateCommand<GrafcetAction> RemoveActionCommand { get; }
+    /// <summary>Removes the supplied action row from <see cref="Actions"/>.</summary>
+    public DelegateCommand<GrafcetActionViewModel> RemoveActionCommand { get; }
 
     // ── Event handler ─────────────────────────────────────────────────────────
 
@@ -185,35 +160,14 @@ public class PropertiesViewModel : BindableBase, INavigationAware
         if (payload is StepViewModel stepVm)
         {
             _selectedVm = stepVm;
-            var step = _document.GetStep(stepVm.Id);
-            if (step is not null)
-            {
-                StepId        = step.Id;
-                StepName      = step.Name;
-                StepIsInitial = step.IsInitial;
-                StepX         = step.X;
-                StepY         = step.Y;
-
-                StepActions.Clear();
-                foreach (var action in step.Actions)
-                    StepActions.Add(action);
-            }
-
+            LoadStep(stepVm.Id);
             IsStepSelected       = true;
             IsTransitionSelected = false;
         }
         else if (payload is TransitionViewModel transVm)
         {
             _selectedVm = transVm;
-            var trans = _document.GetTransition(transVm.Id);
-            if (trans is not null)
-            {
-                TransitionId         = trans.Id;
-                TransitionCondition  = trans.Condition;
-                TransitionFromStepId = trans.FromStepId;
-                TransitionToStepId   = trans.ToStepId;
-            }
-
+            LoadTransition(transVm.Id);
             IsStepSelected       = false;
             IsTransitionSelected = true;
         }
@@ -222,48 +176,86 @@ public class PropertiesViewModel : BindableBase, INavigationAware
             _selectedVm          = null;
             IsStepSelected       = false;
             IsTransitionSelected = false;
+            Actions.Clear();
         }
+    }
+
+    private void LoadStep(int stepId)
+    {
+        var step = _document.GetStep(stepId);
+        if (step is null) return;
+
+        StepId        = step.Id;
+        StepName      = step.Name;
+        StepIsInitial = step.IsInitial;
+
+        Actions.Clear();
+        foreach (var action in step.Actions)
+            Actions.Add(new GrafcetActionViewModel(action));
+    }
+
+    private void LoadTransition(int transitionId)
+    {
+        var trans = _document.GetTransition(transitionId);
+        if (trans is null) return;
+
+        TransitionId        = trans.Id;
+        TransitionCondition = trans.Condition;
     }
 
     // ── Command handlers ──────────────────────────────────────────────────────
 
-    private void ExecuteApplyStep()
+    private void ExecuteApply()
     {
-        var cmd = new ModifyStepCommand(
-            StepId,
-            StepName,
-            StepIsInitial,
-            (int)StepX,
-            (int)StepY,
-            StepActions.ToList());
+        ToolCallBatch batch;
 
-        _undoRedoStack.Push(cmd, _document);
+        if (IsStepSelected)
+        {
+            var actionModels = Actions.Select(a => a.ToModel()).ToList();
+            var prms = JsonSerializer.SerializeToElement(new
+            {
+                stepId  = StepId,
+                name    = StepName,
+                actions = actionModels
+            });
+            batch = new ToolCallBatch
+            {
+                Calls       = [new ToolCall { Tool = "ModifyStep", Params = prms }],
+                Explanation = $"Edit step {StepId}"
+            };
+        }
+        else if (IsTransitionSelected)
+        {
+            var prms = JsonSerializer.SerializeToElement(new
+            {
+                transitionId = TransitionId,
+                condition    = TransitionCondition
+            });
+            batch = new ToolCallBatch
+            {
+                Calls       = [new ToolCall { Tool = "ModifyTransition", Params = prms }],
+                Explanation = $"Edit transition {TransitionId}"
+            };
+        }
+        else return;
 
-        _eventAggregator.GetEvent<ElementSelectedEvent>().Publish(null);        // canvas refresh
-        _eventAggregator.GetEvent<ElementSelectedEvent>().Publish(_selectedVm); // reselect
+        var result = _toolCallExecutor.Execute(batch);
+        if (!result.Success) return;
+
+        // Trigger canvas refresh then reselect so the canvas updates labels
+        _eventAggregator.GetEvent<ElementSelectedEvent>().Publish(null);
+        _eventAggregator.GetEvent<ElementSelectedEvent>().Publish(_selectedVm);
     }
 
-    private void ExecuteApplyTransition()
-    {
-        var cmd = new ModifyTransitionCommand(
-            TransitionId,
-            TransitionCondition,
-            TransitionFromStepId,
-            TransitionToStepId);
-
-        _undoRedoStack.Push(cmd, _document);
-
-        _eventAggregator.GetEvent<ElementSelectedEvent>().Publish(null);        // canvas refresh
-        _eventAggregator.GetEvent<ElementSelectedEvent>().Publish(_selectedVm); // reselect
-    }
+    private void ExecuteCancel() => OnElementSelected(_selectedVm);
 
     private void ExecuteAddAction()
-        => StepActions.Add(new GrafcetAction { Qualifier = ActionQualifier.N, Variable = "" });
+        => Actions.Add(new GrafcetActionViewModel { Qualifier = ActionQualifier.N, Variable = "" });
 
-    private void ExecuteRemoveAction(GrafcetAction? action)
+    private void ExecuteRemoveAction(GrafcetActionViewModel? action)
     {
         if (action is not null)
-            StepActions.Remove(action);
+            Actions.Remove(action);
     }
 
     // ── INavigationAware ──────────────────────────────────────────────────────
