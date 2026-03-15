@@ -2,7 +2,8 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:prism="http://prismlibrary.com/"
-             prism:ViewModelLocator.AutoWireViewModel="True">
+             prism:ViewModelLocator.AutoWireViewModel="True"
+             Focusable="True">
 
     <Grid>
         <!-- Scrollable canvas area -->
@@ -48,10 +49,18 @@
                     </ItemsControl.ItemsPanel>
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
-                            <Line X1="{Binding StartX}" Y1="{Binding StartY}"
-                                  X2="{Binding EndX}"   Y2="{Binding EndY}"
-                                  Stroke="{StaticResource LinkLineColorBrush}"
-                                  StrokeThickness="1.5"/>
+                            <Canvas>
+                                <!-- Thân link -->
+                                <Line X1="{Binding StartX}" Y1="{Binding StartY}"
+                                      X2="{Binding EndX}"   Y2="{Binding EndY}"
+                                      Stroke="{StaticResource LinkLineColorBrush}"
+                                      StrokeThickness="1.5"/>
+                                <!-- Mũi tên -->
+                                <Path Data="{Binding ArrowGeometry}"
+                                      Fill="{StaticResource LinkLineColorBrush}"
+                                      Stroke="{StaticResource LinkLineColorBrush}"
+                                      StrokeThickness="1"/>
+                            </Canvas>
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
@@ -144,6 +153,38 @@
                 </ItemsControl>
             </Grid>
         </ScrollViewer>
+
+        <!-- Link mode hint banner (top, visible only when IsLinkMode = True) -->
+        <Border Panel.ZIndex="20"
+                VerticalAlignment="Top"
+                Padding="10,6">
+            <Border.Style>
+                <Style TargetType="Border">
+                    <Setter Property="Visibility"  Value="Collapsed"/>
+                    <Setter Property="Background"  Value="{StaticResource AccentPrimaryBrush}"/>
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding IsLinkMode}" Value="True">
+                            <Setter Property="Visibility" Value="Visible"/>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Border.Style>
+            <DockPanel>
+                <Button DockPanel.Dock="Right"
+                        Command="{Binding CancelLinkCommand}"
+                        Style="{StaticResource IconButton}"
+                        Margin="12,0,0,0"
+                        ToolTip="Cancel (Esc)">
+                    <TextBlock Text="✕"
+                               Foreground="{StaticResource AccentForegroundBrush}"
+                               FontSize="12"/>
+                </Button>
+                <TextBlock Text="Link mode: click source (Step or Transition), then click target element. Invalid pairs are skipped."
+                           Foreground="{StaticResource AccentForegroundBrush}"
+                           FontSize="12"
+                           VerticalAlignment="Center"/>
+            </DockPanel>
+        </Border>
 
         <!-- Zoom toolbar overlay (top-right corner) -->
         <StackPanel HorizontalAlignment="Right"

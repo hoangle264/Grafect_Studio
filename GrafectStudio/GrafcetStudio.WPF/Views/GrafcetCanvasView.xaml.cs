@@ -96,6 +96,16 @@ public partial class GrafcetCanvasView : UserControl
 
     // ── Helper ────────────────────────────────────────────────────────────────
 
+    protected override void OnPreviewKeyDown(KeyEventArgs e)
+    {
+        base.OnPreviewKeyDown(e);
+        if (e.Key == Key.Escape && DataContext is GrafcetCanvasViewModel vm && vm.IsLinkMode)
+        {
+            vm.CancelLinkCommand.Execute();
+            e.Handled = true;
+        }
+    }
+
     /// <summary>Returns the 3000×3000 Canvas Grid inside the ScrollViewer.</summary>
     private Grid? GetCanvasGrid()
     {

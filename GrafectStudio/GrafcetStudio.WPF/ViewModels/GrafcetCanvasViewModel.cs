@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.Text.Json;
 using GrafcetStudio.Core.Commands;
+using GrafcetStudio.Core.Commands.Links;
 using GrafcetStudio.Core.Commands.Steps;
 using GrafcetStudio.Core.Commands.Transitions;
 using GrafcetStudio.Core.Models.Document;
@@ -36,6 +37,8 @@ public class GrafcetCanvasViewModel : BindableBase, INavigationAware
     private GrafcetDocument? _document;
     private double _zoom = 1.0;
     private object? _selectedElement;
+    private bool _isLinkMode;
+    private object? _linkSource;
 
     public GrafcetCanvasViewModel(
         IEventAggregator eventAggregator,
@@ -52,9 +55,10 @@ public class GrafcetCanvasViewModel : BindableBase, INavigationAware
             .ObservesProperty(() => SelectedElement);
 
         ZoomCommand          = new DelegateCommand<string>(ExecuteZoom);
-        SelectElementCommand = new DelegateCommand<object?>(element => SelectedElement = element);
+        SelectElementCommand = new DelegateCommand<object?>(ExecuteSelectOrConnect);
         DropElementCommand   = new DelegateCommand<DropPayload>(ExecuteDrop);
         MoveElementCommand   = new DelegateCommand<MovePayload>(ExecuteMove);
+        CancelLinkCommand    = new DelegateCommand(ExecuteCancelLink);
     }
 
     // ── Collections ───────────────────────────────────────────────────────────
@@ -114,6 +118,16 @@ public class GrafcetCanvasViewModel : BindableBase, INavigationAware
 
     /// <summary>Moves a step or transition by the delta supplied by <see cref="MovePayload"/>.</summary>
     public DelegateCommand<MovePayload> MoveElementCommand { get; }
+
+    /// <summary>Cancels the current link-creation operation.</summary>
+    public DelegateCommand CancelLinkCommand { get; }
+
+    /// <summary>True when the canvas is in link-creation mode (click source then target).</summary>
+    public bool IsLinkMode
+    {
+        get => _isLinkMode;
+        private set => SetProperty(ref _isLinkMode, value);
+    }
 
     // ── Command handlers ──────────────────────────────────────────────────────
 
@@ -213,6 +227,12 @@ public class GrafcetCanvasViewModel : BindableBase, INavigationAware
             }
 
             case "Link":
+                IsLinkMode  = true;
+                _linkSource = null;
+                SelectedElement = null;
+                System.Diagnostics.Debug.WriteLine("[DropElement] Link mode activated.");
+                break;
+
             case "ParallelBranch":
             case "SelectiveBranch":
                 System.Diagnostics.Debug.WriteLine(
@@ -255,6 +275,62 @@ public class GrafcetCanvasViewModel : BindableBase, INavigationAware
             transVm.X = newX;
             transVm.Y = newY;
         }
+    }
+
+    private void ExecuteSelectOrConnect(object? element)
+    {
+        if (!IsLinkMode)
+        {
+            SelectedElement = element;
+            return;
+        }
+
+        if (element is null) return;
+
+        if (_linkSource is null)
+        {
+            // First click: store source, highlight it
+            _linkSource = element;
+            SelectedElement = element;
+            return;
+        }
+
+        // Second click: validate Step↔Transition pairing
+        bool sourceIsStep = _linkSource is StepViewModel;
+        bool targetIsStep = element    is StepViewModel;
+
+        if (sourceIsStep == targetIsStep)
+        {
+            // Invalid pairing (Step→Step or Transition→Transition) — reset source
+            _linkSource = element;
+            SelectedElement = element;
+            return;
+        }
+
+        if (_document is null) return;
+
+        int sourceId = _linkSource is StepViewModel sv ? sv.Id : ((TransitionViewModel)_linkSource).Id;
+        int targetId = element    is StepViewModel tv ? tv.Id : ((TransitionViewModel)element).Id;
+
+        var link = new GrafcetLink
+        {
+            SourceId           = sourceId,
+            TargetId           = targetId,
+            IsStepToTransition = sourceIsStep
+        };
+
+        _undoRedoStack.Push(new AddLinkCommand(link), _document);
+        LoadFrom(_document);
+
+        IsLinkMode  = false;
+        _linkSource = null;
+    }
+
+    private void ExecuteCancelLink()
+    {
+        IsLinkMode      = false;
+        _linkSource     = null;
+        SelectedElement = null;
     }
 
     // ── Document loading ──────────────────────────────────────────────────────
@@ -320,10 +396,23 @@ public class GrafcetCanvasViewModel : BindableBase, INavigationAware
                 if (stepMap.TryGetValue(link.SourceId,  out var from) &&
                     transMap.TryGetValue(link.TargetId, out var to))
                 {
-                    startX = from.X + STEP_WIDTH / 2;
-                    startY = from.Y + STEP_HEIGHT;
-                    endX   = to.X   + STEP_WIDTH / 2;
-                    endY   = to.Y;
+                    // Step to Transition: determine attachment points based on Y positions
+                    if (from.Y < to.Y)
+                    {
+                        // Step is above transition: connect from bottom of step to top of transition
+                        startX = from.X + STEP_WIDTH / 2;
+                        startY = from.Y + STEP_HEIGHT;
+                        endX   = to.X + STEP_WIDTH / 2;
+                        endY   = to.Y;
+                    }
+                    else
+                    {
+                        // Step is below transition: connect from top of step to bottom of transition
+                        startX = from.X + STEP_WIDTH / 2;
+                        startY = from.Y;
+                        endX   = to.X + STEP_WIDTH / 2;
+                        endY   = to.Y + TRANSITION_HEIGHT;
+                    }
                 }
             }
             else
@@ -331,10 +420,23 @@ public class GrafcetCanvasViewModel : BindableBase, INavigationAware
                 if (transMap.TryGetValue(link.SourceId, out var from) &&
                     stepMap.TryGetValue(link.TargetId,  out var to))
                 {
-                    startX = from.X + STEP_WIDTH  / 2;
-                    startY = from.Y + TRANSITION_HEIGHT;
-                    endX   = to.X   + STEP_WIDTH  / 2;
-                    endY   = to.Y;
+                    // Transition to Step: determine attachment points based on Y positions
+                    if (from.Y < to.Y)
+                    {
+                        // Transition is above step: connect from bottom of transition to top of step
+                        startX = from.X + STEP_WIDTH / 2;
+                        startY = from.Y + TRANSITION_HEIGHT;
+                        endX   = to.X + STEP_WIDTH / 2;
+                        endY   = to.Y;
+                    }
+                    else
+                    {
+                        // Transition is below step: connect from top of transition to bottom of step
+                        startX = from.X + STEP_WIDTH / 2;
+                        startY = from.Y;
+                        endX   = to.X + STEP_WIDTH / 2;
+                        endY   = to.Y + STEP_HEIGHT;
+                    }
                 }
             }
 
