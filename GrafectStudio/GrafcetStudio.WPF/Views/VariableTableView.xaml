@@ -80,12 +80,18 @@
                                     Width="*"/>
                 <DataGridComboBoxColumn Header="Type"
                                         Width="90"
-                                        SelectedItemBinding="{Binding DataType, UpdateSourceTrigger=PropertyChanged}"
-                                        ItemsSource="{StaticResource PlcDataTypes}"/>
+                                        SelectedValueBinding="{Binding DataType, UpdateSourceTrigger=PropertyChanged}">
+                    <DataGridComboBoxColumn.ItemsSource>
+                        <Binding Source="{StaticResource PlcDataTypes}"/>
+                    </DataGridComboBoxColumn.ItemsSource>
+                </DataGridComboBoxColumn>
                 <DataGridComboBoxColumn Header="Kind"
                                         Width="90"
-                                        SelectedItemBinding="{Binding Kind, UpdateSourceTrigger=PropertyChanged}"
-                                        ItemsSource="{StaticResource VariableKinds}"/>
+                                        SelectedValueBinding="{Binding Kind, UpdateSourceTrigger=PropertyChanged}">
+                    <DataGridComboBoxColumn.ItemsSource>
+                        <Binding Source="{StaticResource VariableKinds}"/>
+                    </DataGridComboBoxColumn.ItemsSource>
+                </DataGridComboBoxColumn>
                 <DataGridTextColumn Header="Address"
                                     Binding="{Binding Address, UpdateSourceTrigger=PropertyChanged}"
                                     Width="90"/>
