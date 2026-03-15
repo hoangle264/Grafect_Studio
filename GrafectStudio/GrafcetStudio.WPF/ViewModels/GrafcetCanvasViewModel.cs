@@ -259,6 +259,7 @@ public class GrafcetCanvasViewModel : BindableBase, INavigationAware
 
             stepVm.X = newX;
             stepVm.Y = newY;
+            RecalculateLinks();
         }
         else if (payload.Element is TransitionViewModel transVm)
         {
@@ -274,6 +275,7 @@ public class GrafcetCanvasViewModel : BindableBase, INavigationAware
 
             transVm.X = newX;
             transVm.Y = newY;
+            RecalculateLinks();
         }
     }
 
@@ -388,60 +390,75 @@ public class GrafcetCanvasViewModel : BindableBase, INavigationAware
 
         // Build link ViewModels — endpoints derived from step/transition positions
         foreach (var link in doc.Links)
+            Links.Add(BuildLinkViewModel(link, stepMap, transMap));
+    }
+
+    // ── Link helpers ──────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Computes endpoint coordinates for <paramref name="link"/> using the smart
+    /// attachment-point logic (top/bottom based on relative Y positions).
+    /// </summary>
+    private LinkViewModel BuildLinkViewModel(
+        GrafcetLink link,
+        Dictionary<int, StepViewModel> stepMap,
+        Dictionary<int, TransitionViewModel> transMap)
+    {
+        double startX = 0, startY = 0, endX = 0, endY = 0;
+
+        if (link.IsStepToTransition)
         {
-            double startX = 0, startY = 0, endX = 0, endY = 0;
-
-            if (link.IsStepToTransition)
+            if (stepMap.TryGetValue(link.SourceId,  out var from) &&
+                transMap.TryGetValue(link.TargetId, out var to))
             {
-                if (stepMap.TryGetValue(link.SourceId,  out var from) &&
-                    transMap.TryGetValue(link.TargetId, out var to))
+                if (from.Y < to.Y)
                 {
-                    // Step to Transition: determine attachment points based on Y positions
-                    if (from.Y < to.Y)
-                    {
-                        // Step is above transition: connect from bottom of step to top of transition
-                        startX = from.X + STEP_WIDTH / 2;
-                        startY = from.Y + STEP_HEIGHT;
-                        endX   = to.X + STEP_WIDTH / 2;
-                        endY   = to.Y;
-                    }
-                    else
-                    {
-                        // Step is below transition: connect from top of step to bottom of transition
-                        startX = from.X + STEP_WIDTH / 2;
-                        startY = from.Y;
-                        endX   = to.X + STEP_WIDTH / 2;
-                        endY   = to.Y + TRANSITION_HEIGHT;
-                    }
+                    startX = from.X + STEP_WIDTH / 2; startY = from.Y + STEP_HEIGHT;
+                    endX   = to.X   + STEP_WIDTH / 2; endY   = to.Y;
+                }
+                else
+                {
+                    startX = from.X + STEP_WIDTH / 2; startY = from.Y;
+                    endX   = to.X   + STEP_WIDTH / 2; endY   = to.Y + TRANSITION_HEIGHT;
                 }
             }
-            else
-            {
-                if (transMap.TryGetValue(link.SourceId, out var from) &&
-                    stepMap.TryGetValue(link.TargetId,  out var to))
-                {
-                    // Transition to Step: determine attachment points based on Y positions
-                    if (from.Y < to.Y)
-                    {
-                        // Transition is above step: connect from bottom of transition to top of step
-                        startX = from.X + STEP_WIDTH / 2;
-                        startY = from.Y + TRANSITION_HEIGHT;
-                        endX   = to.X + STEP_WIDTH / 2;
-                        endY   = to.Y;
-                    }
-                    else
-                    {
-                        // Transition is below step: connect from top of transition to bottom of step
-                        startX = from.X + STEP_WIDTH / 2;
-                        startY = from.Y;
-                        endX   = to.X + STEP_WIDTH / 2;
-                        endY   = to.Y + STEP_HEIGHT;
-                    }
-                }
-            }
-
-            Links.Add(new LinkViewModel(startX, startY, endX, endY));
         }
+        else
+        {
+            if (transMap.TryGetValue(link.SourceId, out var from) &&
+                stepMap.TryGetValue(link.TargetId,  out var to))
+            {
+                if (from.Y < to.Y)
+                {
+                    startX = from.X + STEP_WIDTH / 2; startY = from.Y + TRANSITION_HEIGHT;
+                    endX   = to.X   + STEP_WIDTH / 2; endY   = to.Y;
+                }
+                else
+                {
+                    startX = from.X + STEP_WIDTH / 2; startY = from.Y;
+                    endX   = to.X   + STEP_WIDTH / 2; endY   = to.Y + STEP_HEIGHT;
+                }
+            }
+        }
+
+        return new LinkViewModel(startX, startY, endX, endY);
+    }
+
+    /// <summary>
+    /// Rebuilds the <see cref="Links"/> collection from <see cref="_document"/> using the
+    /// current ViewModel positions in <see cref="Steps"/> and <see cref="Transitions"/>.
+    /// Called after a move to avoid a full <see cref="LoadFrom"/> rebuild (prevents flicker).
+    /// </summary>
+    private void RecalculateLinks()
+    {
+        if (_document is null) return;
+
+        var stepMap  = Steps.ToDictionary(s => s.Id);
+        var transMap = Transitions.ToDictionary(t => t.Id);
+
+        Links.Clear();
+        foreach (var link in _document.Links)
+            Links.Add(BuildLinkViewModel(link, stepMap, transMap));
     }
 
     // ── INavigationAware ──────────────────────────────────────────────────────

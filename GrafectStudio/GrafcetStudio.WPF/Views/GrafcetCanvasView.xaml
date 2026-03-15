@@ -50,12 +50,10 @@
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
                             <Canvas>
-                                <!-- Thân link -->
-                                <Line X1="{Binding StartX}" Y1="{Binding StartY}"
-                                      X2="{Binding EndX}"   Y2="{Binding EndY}"
+                                <Path Data="{Binding LinePath}"
                                       Stroke="{StaticResource LinkLineColorBrush}"
-                                      StrokeThickness="1.5"/>
-                                <!-- Mũi tên -->
+                                      StrokeThickness="1.5"
+                                      Fill="Transparent"/>
                                 <Path Data="{Binding ArrowGeometry}"
                                       Fill="{StaticResource LinkLineColorBrush}"
                                       Stroke="{StaticResource LinkLineColorBrush}"

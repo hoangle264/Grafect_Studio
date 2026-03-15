@@ -28,7 +28,10 @@ public class LinkViewModel : BindableBase
         set
         {
             if (SetProperty(ref _startX, value))
+            {
+                RaisePropertyChanged(nameof(LinePath));
                 RaisePropertyChanged(nameof(ArrowGeometry));
+            }
         }
     }
 
@@ -39,7 +42,10 @@ public class LinkViewModel : BindableBase
         set
         {
             if (SetProperty(ref _startY, value))
+            {
+                RaisePropertyChanged(nameof(LinePath));
                 RaisePropertyChanged(nameof(ArrowGeometry));
+            }
         }
     }
 
@@ -50,7 +56,10 @@ public class LinkViewModel : BindableBase
         set
         {
             if (SetProperty(ref _endX, value))
+            {
+                RaisePropertyChanged(nameof(LinePath));
                 RaisePropertyChanged(nameof(ArrowGeometry));
+            }
         }
     }
 
@@ -61,25 +70,42 @@ public class LinkViewModel : BindableBase
         set
         {
             if (SetProperty(ref _endY, value))
+            {
+                RaisePropertyChanged(nameof(LinePath));
                 RaisePropertyChanged(nameof(ArrowGeometry));
+            }
         }
     }
 
-    /// <summary>WPF path geometry string for the arrowhead (readonly, computed from end coordinates).</summary>
+    /// <summary>WPF path geometry string for the orthogonal (right-angle) link body.</summary>
+    public string LinePath
+    {
+        get
+        {
+            double midY = (_startY + _endY) / 2.0;
+            return $"M {_startX},{_startY} L {_startX},{midY} L {_endX},{midY} L {_endX},{_endY}";
+        }
+    }
+
+    /// <summary>WPF path geometry string for the arrowhead at (EndX, EndY), pointing up or down.</summary>
     public string ArrowGeometry
     {
         get
         {
-            const double arrowLength = 10.0;
-            const double arrowWidth = 5.0;
+            double lx, ly, rx, ry;
 
-            double angle = Math.Atan2(_endY - _startY, _endX - _startX);
-
-            double lx = _endX - arrowLength * Math.Cos(angle) + arrowWidth * Math.Sin(angle);
-            double ly = _endY - arrowLength * Math.Sin(angle) - arrowWidth * Math.Cos(angle);
-
-            double rx = _endX - arrowLength * Math.Cos(angle) - arrowWidth * Math.Sin(angle);
-            double ry = _endY - arrowLength * Math.Sin(angle) + arrowWidth * Math.Cos(angle);
+            if (_endY >= _startY)
+            {
+                // Arrow pointing down (↓)
+                lx = _endX - 5; ly = _endY - 10;
+                rx = _endX + 5; ry = _endY - 10;
+            }
+            else
+            {
+                // Arrow pointing up (↑)
+                lx = _endX - 5; ly = _endY + 10;
+                rx = _endX + 5; ry = _endY + 10;
+            }
 
             return $"M {_endX},{_endY} L {lx},{ly} L {rx},{ry} Z";
         }
