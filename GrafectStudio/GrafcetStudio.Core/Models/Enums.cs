@@ -25,3 +25,6 @@ public enum PouType { Program, FunctionBlock }
 
 /// <summary>Interaction mode of the GRAFCET canvas.</summary>
 public enum CanvasMode { Select, Connect }
+
+/// <summary>Role of a step within a GrafcetBranch structure.</summary>
+public enum BranchRole { None, Split, Member, Merge }

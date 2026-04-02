@@ -65,4 +65,7 @@ public class StepViewModel : BindableBase
         get => _isSelected;
         set => SetProperty(ref _isSelected, value);
     }
+
+    /// <summary>Display text showing step number (e.g., "Step 1", "Step 2").</summary>
+    public string StepDisplayText => $"Step {_id}";
 }

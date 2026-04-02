@@ -1,0 +1,50 @@
+<UserControl x:Class="GrafcetStudio.WPF.Views.TransitionTableView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:prism="http://prismlibrary.com/"
+             prism:ViewModelLocator.AutoWireViewModel="True">
+
+    <DockPanel>
+        <!-- Toolbar: Add / Remove transition -->
+        <ToolBar DockPanel.Dock="Top"
+                 Background="{StaticResource BackgroundTertiaryBrush}">
+            <Button Style="{StaticResource IconButton}"
+                    Command="{Binding AddTransitionCommand}"
+                    ToolTip="Add transition">
+                <TextBlock Text="+" FontSize="14" FontWeight="Bold"
+                           Foreground="{StaticResource TextPrimaryBrush}"/>
+            </Button>
+            <Button Style="{StaticResource IconButton}"
+                    Command="{Binding RemoveTransitionCommand}"
+                    ToolTip="Remove transition">
+                <TextBlock Text="✕" FontSize="11"
+                           Foreground="{StaticResource TextPrimaryBrush}"/>
+            </Button>
+        </ToolBar>
+
+        <!-- Transition table -->
+        <DataGrid ItemsSource="{Binding Transitions}"
+                  SelectedItem="{Binding SelectedTransition, Mode=TwoWay}"
+                  CanUserAddRows="False"
+                  AutoGenerateColumns="False"
+                  ColumnHeaderStyle="{StaticResource DataGridColumnHeaderStyle}"
+                  RowStyle="{StaticResource DataGridRowStyle}"
+                  CellStyle="{StaticResource DataGridCellStyle}">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="ID"
+                                    Binding="{Binding Id}"
+                                    Width="45"
+                                    IsReadOnly="True"/>
+                <DataGridTextColumn Header="From Step"
+                                    Binding="{Binding FromStepId, UpdateSourceTrigger=PropertyChanged}"
+                                    Width="90"/>
+                <DataGridTextColumn Header="To Step"
+                                    Binding="{Binding ToStepId, UpdateSourceTrigger=PropertyChanged}"
+                                    Width="90"/>
+                <DataGridTextColumn Header="Condition"
+                                    Binding="{Binding Condition, UpdateSourceTrigger=PropertyChanged}"
+                                    Width="*"/>
+            </DataGrid.Columns>
+        </DataGrid>
+    </DockPanel>
+</UserControl>

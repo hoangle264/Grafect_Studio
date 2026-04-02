@@ -20,4 +20,10 @@ public class GrafcetStep
 
     /// <summary>Vertical position on the canvas in device-independent units.</summary>
     public double Y { get; set; }
+
+    /// <summary>Id of the GrafcetBranch this step belongs to. Null when not part of any branch.</summary>
+    public int? BranchId { get; set; }
+
+    /// <summary>Role of this step within its branch structure (Split, Member, Merge, or None).</summary>
+    public BranchRole BranchRole { get; set; }
 }

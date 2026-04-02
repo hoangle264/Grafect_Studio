@@ -108,11 +108,26 @@
 
                     </avd:LayoutPanel>
 
-                    <!-- Right panel: Variables + Properties -->
+                    <!-- Right panel: Variables + Steps + Transitions + Branches + Properties -->
                     <avd:LayoutAnchorablePane DockWidth="280">
                         <avd:LayoutAnchorable Title="Variables"
                                               CanClose="False">
                             <ContentControl prism:RegionManager.RegionName="VariablesRegion"/>
+                        </avd:LayoutAnchorable>
+
+                        <avd:LayoutAnchorable Title="Steps"
+                                              CanClose="False">
+                            <ContentControl prism:RegionManager.RegionName="StepsRegion"/>
+                        </avd:LayoutAnchorable>
+
+                        <avd:LayoutAnchorable Title="Transitions"
+                                              CanClose="False">
+                            <ContentControl prism:RegionManager.RegionName="TransitionsRegion"/>
+                        </avd:LayoutAnchorable>
+
+                        <avd:LayoutAnchorable Title="Branches"
+                                              CanClose="False">
+                            <ContentControl prism:RegionManager.RegionName="BranchesRegion"/>
                         </avd:LayoutAnchorable>
 
                         <avd:LayoutAnchorable Title="Properties"

@@ -1,0 +1,77 @@
+<UserControl x:Class="GrafcetStudio.WPF.Views.StepTableView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:prism="http://prismlibrary.com/"
+             xmlns:sys="clr-namespace:System;assembly=System.Runtime"
+             xmlns:models="clr-namespace:GrafcetStudio.Core.Models;assembly=GrafcetStudio.Core"
+             prism:ViewModelLocator.AutoWireViewModel="True">
+
+    <UserControl.Resources>
+        <ObjectDataProvider x:Key="BranchRoles"
+                            MethodName="GetValues"
+                            ObjectType="{x:Type sys:Enum}">
+            <ObjectDataProvider.MethodParameters>
+                <x:Type TypeName="models:BranchRole"/>
+            </ObjectDataProvider.MethodParameters>
+        </ObjectDataProvider>
+    </UserControl.Resources>
+
+    <DockPanel>
+        <!-- Toolbar: Add / Remove step -->
+        <ToolBar DockPanel.Dock="Top"
+                 Background="{StaticResource BackgroundTertiaryBrush}">
+            <Button Style="{StaticResource IconButton}"
+                    Command="{Binding AddStepCommand}"
+                    ToolTip="Add step">
+                <TextBlock Text="+" FontSize="14" FontWeight="Bold"
+                           Foreground="{StaticResource TextPrimaryBrush}"/>
+            </Button>
+            <Button Style="{StaticResource IconButton}"
+                    Command="{Binding RemoveStepCommand}"
+                    ToolTip="Remove step">
+                <TextBlock Text="✕" FontSize="11"
+                           Foreground="{StaticResource TextPrimaryBrush}"/>
+            </Button>
+        </ToolBar>
+
+        <!-- Step table -->
+        <DataGrid ItemsSource="{Binding Steps}"
+                  SelectedItem="{Binding SelectedStep, Mode=TwoWay}"
+                  CanUserAddRows="False"
+                  AutoGenerateColumns="False"
+                  ColumnHeaderStyle="{StaticResource DataGridColumnHeaderStyle}"
+                  RowStyle="{StaticResource DataGridRowStyle}"
+                  CellStyle="{StaticResource DataGridCellStyle}">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="ID"
+                                    Binding="{Binding Id}"
+                                    Width="45"
+                                    IsReadOnly="True"/>
+                <DataGridTextColumn Header="Name"
+                                    Binding="{Binding Name, UpdateSourceTrigger=PropertyChanged}"
+                                    Width="*"/>
+                <DataGridCheckBoxColumn Header="Initial"
+                                        Binding="{Binding IsInitial, UpdateSourceTrigger=PropertyChanged}"
+                                        Width="60"/>
+                <DataGridTextColumn Header="Branch"
+                                    Binding="{Binding BranchId, UpdateSourceTrigger=PropertyChanged}"
+                                    Width="65"/>
+                <DataGridComboBoxColumn Header="Role"
+                                        Width="90"
+                                        SelectedValueBinding="{Binding BranchRole, UpdateSourceTrigger=PropertyChanged}">
+                    <DataGridComboBoxColumn.ItemsSource>
+                        <Binding Source="{StaticResource BranchRoles}"/>
+                    </DataGridComboBoxColumn.ItemsSource>
+                </DataGridComboBoxColumn>
+                <DataGridTemplateColumn Header="Actions" Width="120">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Actions.Count, StringFormat='{}{0} action(s)'}"
+                                       VerticalAlignment="Center"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+            </DataGrid.Columns>
+        </DataGrid>
+    </DockPanel>
+</UserControl>

@@ -146,36 +146,39 @@
                     </ItemsControl.ItemContainerStyle>
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
-                            <Border x:Name="StepBorder"
-                                    Width="120" Height="40"
-                                    CornerRadius="2"
-                                    BorderBrush="{StaticResource StepBorderBrush}"
-                                    BorderThickness="2"
-                                    Background="{StaticResource StepFillBrush}"
-                                    Cursor="Hand"
-                                    MouseLeftButtonDown="OnElementMouseDown"
-                                    MouseLeftButtonUp="OnElementMouseUp"
-                                    MouseMove="OnElementMouseMove">
-                                <Grid>
-                                    <!-- Inner border shown only for initial step -->
-                                    <Border x:Name="InitialBorder"
-                                            Margin="4"
-                                            BorderThickness="2"
-                                            BorderBrush="Transparent"/>
-                                    <TextBlock Text="{Binding Name}"
-                                               HorizontalAlignment="Center"
-                                               VerticalAlignment="Center"
-                                               FontFamily="Segoe UI"
-                                               FontSize="12"
-                                               FontWeight="SemiBold"
-                                               Foreground="{StaticResource TextPrimaryBrush}"/>
-                                </Grid>
-                            </Border>
-                            <DataTemplate.Triggers>
-                                <DataTrigger Binding="{Binding IsSelected}" Value="True">
-                                    <Setter TargetName="StepBorder" Property="Background"
-                                            Value="{StaticResource BackgroundSelectedBrush}"/>
-                                </DataTrigger>
+                            <StackPanel Orientation="Horizontal" Cursor="Hand"
+                                        MouseLeftButtonDown="OnElementMouseDown"
+                                        MouseLeftButtonUp="OnElementMouseUp"
+                                        MouseMove="OnElementMouseMove">
+                                <!-- Main step box - displays Step ID -->
+                                <Border x:Name="StepBorder"
+                                        Width="120" Height="40"
+                                        CornerRadius="2"
+                                        BorderBrush="{StaticResource StepBorderBrush}"
+                                        BorderThickness="2"
+                                        Background="{StaticResource StepFillBrush}">
+                                    <Grid>
+                                        <!-- Inner border shown only for initial step -->
+                                        <Border x:Name="InitialBorder"
+                                                Margin="4"
+                                                BorderThickness="2"
+                                                BorderBrush="Transparent"/>
+                                        <TextBlock Text="{Binding StepDisplayText}"
+                                                   HorizontalAlignment="Center"
+                                                   VerticalAlignment="Center"
+                                                   FontFamily="Segoe UI"
+                                                   FontSize="12"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{StaticResource TextPrimaryBrush}"/>
+                                    </Grid>
+                                </Border>
+
+                                </StackPanel>
+                                <DataTemplate.Triggers>
+                                    <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                                        <Setter TargetName="StepBorder" Property="Background"
+                                                Value="{StaticResource BackgroundSelectedBrush}"/>
+                                    </DataTrigger>
                                 <DataTrigger Binding="{Binding IsInitial}" Value="True">
                                     <Setter TargetName="InitialBorder" Property="BorderBrush"
                                             Value="{StaticResource StepInitialBorderBrush}"/>

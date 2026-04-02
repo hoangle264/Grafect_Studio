@@ -36,6 +36,9 @@ public partial class App : PrismApplication
         containerRegistry.RegisterForNavigation<VariableTableView,  VariableTableViewModel>();
         containerRegistry.RegisterForNavigation<CodeOutputView,     CodeOutputViewModel>();
         containerRegistry.RegisterForNavigation<PropertiesView,     PropertiesViewModel>();
+        containerRegistry.RegisterForNavigation<StepTableView,       StepTableViewModel>();
+        containerRegistry.RegisterForNavigation<TransitionTableView, TransitionTableViewModel>();
+        containerRegistry.RegisterForNavigation<BranchTableView,     BranchTableViewModel>();
     }
 
     protected override void OnInitialized()
@@ -54,5 +57,8 @@ public partial class App : PrismApplication
         regionManager.RequestNavigate("VariablesRegion",   nameof(VariableTableView));
         regionManager.RequestNavigate("CodeRegion",        nameof(CodeOutputView));
         regionManager.RequestNavigate("PropertiesRegion",  nameof(PropertiesView));
+        regionManager.RequestNavigate("StepsRegion",       nameof(StepTableView));
+        regionManager.RequestNavigate("TransitionsRegion", nameof(TransitionTableView));
+        regionManager.RequestNavigate("BranchesRegion",    nameof(BranchTableView));
     }
 }

@@ -70,7 +70,10 @@ public class ToolCallFactory
     private static ModifyStepCommand CreateModifyStep(JsonElement p)
     {
         var dto = Deserialize<ModifyStepParams>(p);
-        return new ModifyStepCommand(dto.StepId, dto.Name, dto.IsInitial, dto.X, dto.Y, dto.Actions);
+        return new ModifyStepCommand(
+            dto.StepId, dto.Name, dto.IsInitial,
+            dto.X, dto.Y, dto.Actions,
+            dto.BranchId, dto.BranchRole);
     }
 
     // ── Transition factories ──────────────────────────────────────────────────
@@ -163,7 +166,7 @@ public class ToolCallFactory
 
     private sealed record ModifyStepParams(
         int StepId, string? Name, bool? IsInitial, double? X, double? Y,
-        List<GrafcetAction>? Actions);
+        List<GrafcetAction>? Actions, int? BranchId, BranchRole? BranchRole);
 
     private sealed record AddTransitionParams(
         int Id, string? Condition, int FromStepId, int ToStepId);

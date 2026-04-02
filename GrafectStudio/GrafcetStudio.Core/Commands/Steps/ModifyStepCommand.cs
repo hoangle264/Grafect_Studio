@@ -1,3 +1,4 @@
+using GrafcetStudio.Core.Models;
 using GrafcetStudio.Core.Models.Document;
 
 namespace GrafcetStudio.Core.Commands.Steps;
@@ -11,8 +12,10 @@ public class ModifyStepCommand : IGrafcetCommand
     private readonly double? _x;
     private readonly double? _y;
     private readonly List<GrafcetAction>? _actions;
+    private readonly int? _branchId;
+    private readonly BranchRole? _branchRole;
 
-    private record Snapshot(string Name, bool IsInitial, double X, double Y, List<GrafcetAction> Actions);
+    private record Snapshot(string Name, bool IsInitial, double X, double Y, List<GrafcetAction> Actions, int? BranchId, BranchRole BranchRole);
     private Snapshot? _snapshot;
 
     public string Description => $"Modify step {_stepId}";
@@ -22,7 +25,9 @@ public class ModifyStepCommand : IGrafcetCommand
         bool?   isInitial = null,
         double? x        = null,
         double? y        = null,
-        List<GrafcetAction>? actions = null)
+        List<GrafcetAction>? actions = null,
+        int? branchId = null,
+        BranchRole? branchRole = null)
     {
         _stepId    = stepId;
         _name      = name;
@@ -30,6 +35,8 @@ public class ModifyStepCommand : IGrafcetCommand
         _x         = x;
         _y         = y;
         _actions   = actions;
+        _branchId  = branchId;
+        _branchRole = branchRole;
     }
 
     public void Execute(GrafcetDocument document)
@@ -48,13 +55,17 @@ public class ModifyStepCommand : IGrafcetCommand
                 Qualifier = a.Qualifier,
                 Variable  = a.Variable,
                 Parameter = a.Parameter
-            }).ToList());
+            }).ToList(),
+            step.BranchId,
+            step.BranchRole);
 
         if (_name      is not null) step.Name      = _name;
         if (_isInitial is not null) step.IsInitial = _isInitial.Value;
         if (_x         is not null) step.X         = _x.Value;
         if (_y         is not null) step.Y         = _y.Value;
         if (_actions   is not null) step.Actions   = _actions;
+        if (_branchId   is not null) step.BranchId   = _branchId;
+        if (_branchRole is not null) step.BranchRole = _branchRole.Value;
     }
 
     public void Undo(GrafcetDocument document)
@@ -69,5 +80,7 @@ public class ModifyStepCommand : IGrafcetCommand
         step.X         = _snapshot.X;
         step.Y         = _snapshot.Y;
         step.Actions   = _snapshot.Actions;
+        step.BranchId   = _snapshot.BranchId;
+        step.BranchRole = _snapshot.BranchRole;
     }
 }
