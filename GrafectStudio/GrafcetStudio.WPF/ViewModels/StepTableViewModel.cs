@@ -10,6 +10,7 @@ namespace GrafcetStudio.WPF.ViewModels;
 /// <summary>ViewModel for the step table panel — exposes the full step list for grid-based editing.</summary>
 public class StepTableViewModel : BindableBase, INavigationAware
 {
+    private readonly GrafcetDocument _document;
     private StepRowViewModel? _selectedStep;
 
     public ObservableCollection<StepRowViewModel> Steps { get; } = [];
@@ -27,8 +28,9 @@ public class StepTableViewModel : BindableBase, INavigationAware
     public DelegateCommand AddStepCommand    { get; }
     public DelegateCommand RemoveStepCommand { get; }
 
-    public StepTableViewModel()
+    public StepTableViewModel(GrafcetDocument document)
     {
+        _document = document;
         AddStepCommand = new DelegateCommand(ExecuteAddStep);
         RemoveStepCommand = new DelegateCommand(ExecuteRemoveStep, () => SelectedStep is not null)
             .ObservesProperty(() => SelectedStep);
@@ -36,9 +38,10 @@ public class StepTableViewModel : BindableBase, INavigationAware
 
     private void ExecuteAddStep()
     {
-        var row = StepRowViewModel.CreateNew();
-        Steps.Add(row);
-        SelectedStep = row;
+        var newStep = StepRowViewModel.CreateNew();
+        newStep.Id = Steps.Count == 0 ? 1 : Steps.Max(s => s.Id) + 1;
+        Steps.Add(newStep);
+        SelectedStep = newStep;
     }
 
     private void ExecuteRemoveStep()

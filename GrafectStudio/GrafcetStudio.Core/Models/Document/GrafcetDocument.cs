@@ -43,6 +43,10 @@ public class GrafcetDocument
     public int NextTransitionId()
         => Transitions.Count == 0 ? 1 : Transitions.Max(t => t.Id) + 1;
 
+    /// <summary>Returns the next available branch ID (max existing + 1, or 1 when empty).</summary>
+    public int NextBranchId()
+        => Branches.Count == 0 ? 1 : Branches.Max(b => b.Id) + 1;
+
     // ── Validation ────────────────────────────────────────────────────────────
 
     /// <summary>

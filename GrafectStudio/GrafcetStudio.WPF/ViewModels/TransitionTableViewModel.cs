@@ -9,6 +9,7 @@ namespace GrafcetStudio.WPF.ViewModels;
 /// <summary>ViewModel for the transition table panel — exposes the full transition list for grid-based editing.</summary>
 public class TransitionTableViewModel : BindableBase, INavigationAware
 {
+    private readonly GrafcetDocument _document;
     private TransitionRowViewModel? _selectedTransition;
 
     public ObservableCollection<TransitionRowViewModel> Transitions { get; } = [];
@@ -26,8 +27,9 @@ public class TransitionTableViewModel : BindableBase, INavigationAware
     public DelegateCommand AddTransitionCommand    { get; }
     public DelegateCommand RemoveTransitionCommand { get; }
 
-    public TransitionTableViewModel()
+    public TransitionTableViewModel(GrafcetDocument document)
     {
+        _document = document;
         AddTransitionCommand = new DelegateCommand(ExecuteAddTransition);
         RemoveTransitionCommand = new DelegateCommand(ExecuteRemoveTransition, () => SelectedTransition is not null)
             .ObservesProperty(() => SelectedTransition);
@@ -35,9 +37,10 @@ public class TransitionTableViewModel : BindableBase, INavigationAware
 
     private void ExecuteAddTransition()
     {
-        var row = TransitionRowViewModel.CreateNew();
-        Transitions.Add(row);
-        SelectedTransition = row;
+        var newTrans = TransitionRowViewModel.CreateNew();
+        newTrans.Id = Transitions.Count == 0 ? 1 : Transitions.Max(t => t.Id) + 1;
+        Transitions.Add(newTrans);
+        SelectedTransition = newTrans;
     }
 
     private void ExecuteRemoveTransition()

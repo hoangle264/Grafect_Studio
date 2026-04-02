@@ -10,6 +10,7 @@ namespace GrafcetStudio.WPF.ViewModels;
 /// <summary>ViewModel for the branch table panel — exposes the full branch list for grid-based editing.</summary>
 public class BranchTableViewModel : BindableBase, INavigationAware
 {
+    private readonly GrafcetDocument _document;
     private BranchRowViewModel? _selectedBranch;
 
     public ObservableCollection<BranchRowViewModel> Branches { get; } = [];
@@ -27,8 +28,9 @@ public class BranchTableViewModel : BindableBase, INavigationAware
     public DelegateCommand AddBranchCommand    { get; }
     public DelegateCommand RemoveBranchCommand { get; }
 
-    public BranchTableViewModel()
+    public BranchTableViewModel(GrafcetDocument document)
     {
+        _document = document;
         AddBranchCommand = new DelegateCommand(ExecuteAddBranch);
         RemoveBranchCommand = new DelegateCommand(ExecuteRemoveBranch, () => SelectedBranch is not null)
             .ObservesProperty(() => SelectedBranch);
@@ -36,9 +38,10 @@ public class BranchTableViewModel : BindableBase, INavigationAware
 
     private void ExecuteAddBranch()
     {
-        var row = BranchRowViewModel.CreateNew();
-        Branches.Add(row);
-        SelectedBranch = row;
+        var newBranch = BranchRowViewModel.CreateNew();
+        newBranch.Id = Branches.Count == 0 ? 1 : Branches.Max(b => b.Id) + 1;
+        Branches.Add(newBranch);
+        SelectedBranch = newBranch;
     }
 
     private void ExecuteRemoveBranch()
