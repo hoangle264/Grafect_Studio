@@ -59,6 +59,45 @@
                     </DrawingBrush>
                 </Grid.Background>
 
+                <!-- Layer 0: Branch split/merge bars — rendered below links -->
+                <ItemsControl ItemsSource="{Binding Branches}" IsHitTestVisible="False">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate><Canvas/></ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Canvas>
+                                <!-- Split bar (double line for Parallel per IEC 60848) -->
+                                <Grid>
+                                    <Line X1="{Binding X}"  Y1="{Binding Y}"
+                                          X2="{Binding X2}" Y2="{Binding Y}"
+                                          Stroke="{StaticResource StepBorderBrush}"
+                                          StrokeThickness="2"/>
+                                    <Line X1="{Binding X}"  Y1="{Binding Y2Offset}"
+                                          X2="{Binding X2}" Y2="{Binding Y2Offset}"
+                                          Stroke="{StaticResource StepBorderBrush}"
+                                          StrokeThickness="2"
+                                          Visibility="{Binding IsParallel,
+                                              Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                </Grid>
+                                <!-- Merge bar (double line for Parallel per IEC 60848) -->
+                                <Grid>
+                                    <Line X1="{Binding X}"  Y1="{Binding MergeY}"
+                                          X2="{Binding X2}" Y2="{Binding MergeY}"
+                                          Stroke="{StaticResource StepBorderBrush}"
+                                          StrokeThickness="2"/>
+                                    <Line X1="{Binding X}"  Y1="{Binding MergeY2Offset}"
+                                          X2="{Binding X2}" Y2="{Binding MergeY2Offset}"
+                                          Stroke="{StaticResource StepBorderBrush}"
+                                          StrokeThickness="2"
+                                          Visibility="{Binding IsParallel,
+                                              Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                </Grid>
+                            </Canvas>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
                 <!-- Layer 1: Links (arrows) — selectable and deletable -->
                 <ItemsControl ItemsSource="{Binding Links}" IsHitTestVisible="True">
                     <ItemsControl.ItemsPanel>

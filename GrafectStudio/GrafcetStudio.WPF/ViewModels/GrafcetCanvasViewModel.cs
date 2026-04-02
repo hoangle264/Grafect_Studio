@@ -80,6 +80,7 @@ public class GrafcetCanvasViewModel : BindableBase, INavigationAware
     public ObservableCollection<StepViewModel>       Steps       { get; } = [];
     public ObservableCollection<TransitionViewModel> Transitions { get; } = [];
     public ObservableCollection<LinkViewModel>       Links       { get; } = [];
+    public ObservableCollection<BranchViewModel>     Branches    { get; } = [];
 
     // ── Properties ────────────────────────────────────────────────────────────
 
@@ -520,6 +521,7 @@ public class GrafcetCanvasViewModel : BindableBase, INavigationAware
         Steps.Clear();
         Transitions.Clear();
         Links.Clear();
+        Branches.Clear();
 
         // Bypass the property setter so we don't republish ElementSelectedEvent
         // (which would trigger OnExternalElementSelected and loop back into LoadFrom).
@@ -569,6 +571,21 @@ public class GrafcetCanvasViewModel : BindableBase, INavigationAware
         // Build link ViewModels — endpoints derived from step/transition positions
         foreach (var link in doc.Links)
             Links.Add(BuildLinkViewModel(link, stepMap, transMap));
+
+        // Build branch ViewModels — split/merge bar positions derived from step positions
+        foreach (var branch in doc.Branches)
+        {
+            var branchSteps = Steps.Where(s => s.BranchId == branch.Id).ToList();
+            if (branchSteps.Count == 0) continue;
+
+            double x      = branchSteps.Min(s => s.X);
+            double width  = branchSteps.Max(s => s.X + 120) - x;
+            double y      = branchSteps.Min(s => s.Y) - 20;
+            var mergeStep = Steps.FirstOrDefault(s => s.Id == branch.MergeStepId);
+            double mergeY = mergeStep?.Y ?? (y + 200);
+
+            Branches.Add(new BranchViewModel(branch, x, y, width, mergeY));
+        }
     }
 
     // ── Link helpers ──────────────────────────────────────────────────────────

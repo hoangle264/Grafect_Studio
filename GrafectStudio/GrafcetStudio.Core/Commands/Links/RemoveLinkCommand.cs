@@ -33,11 +33,40 @@ public class RemoveLinkCommand : IGrafcetCommand
 
         _snapshot = link;
         doc.Links.Remove(link);
+
+        // Clear the corresponding step reference on the transition
+        if (_isStepToTransition)
+        {
+            var transition = doc.Transitions.FirstOrDefault(t => t.Id == _targetId);
+            if (transition is not null)
+                transition.FromStepId = 0;
+        }
+        else
+        {
+            var transition = doc.Transitions.FirstOrDefault(t => t.Id == _sourceId);
+            if (transition is not null)
+                transition.ToStepId = 0;
+        }
     }
 
     public void Undo(GrafcetDocument doc)
     {
-        if (_snapshot is not null)
-            doc.Links.Add(_snapshot);
+        if (_snapshot is null) return;
+
+        doc.Links.Add(_snapshot);
+
+        // Restore the step reference on the transition
+        if (_snapshot.IsStepToTransition)
+        {
+            var transition = doc.Transitions.FirstOrDefault(t => t.Id == _snapshot.TargetId);
+            if (transition is not null)
+                transition.FromStepId = _snapshot.SourceId;
+        }
+        else
+        {
+            var transition = doc.Transitions.FirstOrDefault(t => t.Id == _snapshot.SourceId);
+            if (transition is not null)
+                transition.ToStepId = _snapshot.TargetId;
+        }
     }
 }

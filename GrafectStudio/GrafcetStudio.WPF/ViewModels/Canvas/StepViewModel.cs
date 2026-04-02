@@ -11,15 +11,17 @@ public class StepViewModel : BindableBase
     private bool _isInitial;
     private double _x;
     private double _y;
-    private bool _isSelected;
+    private bool  _isSelected;
+    private int?  _branchId;
 
     public StepViewModel(GrafcetStep step)
     {
-        _id        = step.Id;
-        _name      = step.Name;
+        _id       = step.Id;
+        _name     = step.Name;
         _isInitial = step.IsInitial;
-        _x         = step.X;
-        _y         = step.Y;
+        _x        = step.X;
+        _y        = step.Y;
+        _branchId = step.BranchId;
     }
 
     /// <summary>Unique step identifier matching the model.</summary>
@@ -68,4 +70,11 @@ public class StepViewModel : BindableBase
 
     /// <summary>Display text showing step number (e.g., "Step 1", "Step 2").</summary>
     public string StepDisplayText => $"Step {_id}";
+
+    /// <summary>Id of the branch this step belongs to; null when not part of any branch.</summary>
+    public int? BranchId
+    {
+        get => _branchId;
+        set => SetProperty(ref _branchId, value);
+    }
 }
