@@ -1,7 +1,9 @@
 using System.Collections.ObjectModel;
 using GrafcetStudio.Core.Models;
 using GrafcetStudio.Core.Models.Document;
+using GrafcetStudio.WPF.Events;
 using Prism.Commands;
+using Prism.Events;
 using Prism.Mvvm;
 using Prism.Navigation.Regions;
 
@@ -10,7 +12,8 @@ namespace GrafcetStudio.WPF.ViewModels;
 /// <summary>ViewModel for the branch table panel — exposes the full branch list for grid-based editing.</summary>
 public class BranchTableViewModel : BindableBase, INavigationAware
 {
-    private readonly GrafcetDocument _document;
+    private readonly GrafcetDocument  _document;
+    private readonly IEventAggregator  _eventAggregator;
     private BranchRowViewModel? _selectedBranch;
 
     public ObservableCollection<BranchRowViewModel> Branches { get; } = [];
@@ -28,12 +31,22 @@ public class BranchTableViewModel : BindableBase, INavigationAware
     public DelegateCommand AddBranchCommand    { get; }
     public DelegateCommand RemoveBranchCommand { get; }
 
-    public BranchTableViewModel(GrafcetDocument document)
+    public BranchTableViewModel(GrafcetDocument document, IEventAggregator eventAggregator)
     {
-        _document = document;
+        _document        = document;
+        _eventAggregator = eventAggregator;
         AddBranchCommand = new DelegateCommand(ExecuteAddBranch);
         RemoveBranchCommand = new DelegateCommand(ExecuteRemoveBranch, () => SelectedBranch is not null)
             .ObservesProperty(() => SelectedBranch);
+
+        _eventAggregator
+            .GetEvent<DocumentChangedEvent>()
+            .Subscribe(OnDocumentChanged);
+    }
+
+    private void OnDocumentChanged()
+    {
+        LoadFrom(_document);
     }
 
     private void ExecuteAddBranch()
@@ -42,6 +55,8 @@ public class BranchTableViewModel : BindableBase, INavigationAware
         newBranch.Id = Branches.Count == 0 ? 1 : Branches.Max(b => b.Id) + 1;
         Branches.Add(newBranch);
         SelectedBranch = newBranch;
+        ApplyTo(_document);
+        _eventAggregator.GetEvent<DocumentChangedEvent>().Publish();
     }
 
     private void ExecuteRemoveBranch()
@@ -49,6 +64,8 @@ public class BranchTableViewModel : BindableBase, INavigationAware
         if (SelectedBranch is null) return;
         Branches.Remove(SelectedBranch);
         SelectedBranch = null;
+        ApplyTo(_document);
+        _eventAggregator.GetEvent<DocumentChangedEvent>().Publish();
     }
 
     /// <summary>Clears and reloads <see cref="Branches"/> from the given document.</summary>
@@ -69,7 +86,10 @@ public class BranchTableViewModel : BindableBase, INavigationAware
 
     // ── INavigationAware ──────────────────────────────────────────────────────
 
-    public void OnNavigatedTo(NavigationContext navigationContext)   { }
+    public void OnNavigatedTo(NavigationContext navigationContext)
+    {
+        LoadFrom(_document);
+    }
     public void OnNavigatedFrom(NavigationContext navigationContext) { }
     public bool IsNavigationTarget(NavigationContext navigationContext) => true;
 }

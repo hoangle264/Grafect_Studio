@@ -1,7 +1,9 @@
 using System.Collections.ObjectModel;
 using GrafcetStudio.Core.Models;
 using GrafcetStudio.Core.Models.Document;
+using GrafcetStudio.WPF.Events;
 using Prism.Commands;
+using Prism.Events;
 using Prism.Mvvm;
 using Prism.Navigation.Regions;
 
@@ -10,7 +12,8 @@ namespace GrafcetStudio.WPF.ViewModels;
 /// <summary>ViewModel for the step table panel — exposes the full step list for grid-based editing.</summary>
 public class StepTableViewModel : BindableBase, INavigationAware
 {
-    private readonly GrafcetDocument _document;
+    private readonly GrafcetDocument  _document;
+    private readonly IEventAggregator  _eventAggregator;
     private StepRowViewModel? _selectedStep;
 
     public ObservableCollection<StepRowViewModel> Steps { get; } = [];
@@ -28,12 +31,22 @@ public class StepTableViewModel : BindableBase, INavigationAware
     public DelegateCommand AddStepCommand    { get; }
     public DelegateCommand RemoveStepCommand { get; }
 
-    public StepTableViewModel(GrafcetDocument document)
+    public StepTableViewModel(GrafcetDocument document, IEventAggregator eventAggregator)
     {
-        _document = document;
+        _document         = document;
+        _eventAggregator  = eventAggregator;
         AddStepCommand = new DelegateCommand(ExecuteAddStep);
         RemoveStepCommand = new DelegateCommand(ExecuteRemoveStep, () => SelectedStep is not null)
             .ObservesProperty(() => SelectedStep);
+
+        _eventAggregator
+            .GetEvent<DocumentChangedEvent>()
+            .Subscribe(OnDocumentChanged);
+    }
+
+    private void OnDocumentChanged()
+    {
+        LoadFrom(_document);
     }
 
     private void ExecuteAddStep()
@@ -42,6 +55,8 @@ public class StepTableViewModel : BindableBase, INavigationAware
         newStep.Id = Steps.Count == 0 ? 1 : Steps.Max(s => s.Id) + 1;
         Steps.Add(newStep);
         SelectedStep = newStep;
+        ApplyTo(_document);
+        _eventAggregator.GetEvent<DocumentChangedEvent>().Publish();
     }
 
     private void ExecuteRemoveStep()
@@ -49,6 +64,8 @@ public class StepTableViewModel : BindableBase, INavigationAware
         if (SelectedStep is null) return;
         Steps.Remove(SelectedStep);
         SelectedStep = null;
+        ApplyTo(_document);
+        _eventAggregator.GetEvent<DocumentChangedEvent>().Publish();
     }
 
     /// <summary>Clears and reloads <see cref="Steps"/> from the given document.</summary>
@@ -79,7 +96,10 @@ public class StepTableViewModel : BindableBase, INavigationAware
 
     // ── INavigationAware ──────────────────────────────────────────────────────
 
-    public void OnNavigatedTo(NavigationContext navigationContext)   { }
+    public void OnNavigatedTo(NavigationContext navigationContext)
+    {
+        LoadFrom(_document);
+    }
     public void OnNavigatedFrom(NavigationContext navigationContext) { }
     public bool IsNavigationTarget(NavigationContext navigationContext) => true;
 }

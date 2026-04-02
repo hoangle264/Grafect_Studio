@@ -44,6 +44,7 @@ public class GrafcetCanvasViewModel : BindableBase, INavigationAware
     private double _ghostX1, _ghostY1, _ghostX2, _ghostY2;
     private bool   _ghostLineVisible;
     private CanvasMode _currentMode = CanvasMode.Select;
+    private bool _isSelfPublishing;
 
     public GrafcetCanvasViewModel(
         IEventAggregator eventAggregator,
@@ -68,6 +69,10 @@ public class GrafcetCanvasViewModel : BindableBase, INavigationAware
         eventAggregator
             .GetEvent<ElementSelectedEvent>()
             .Subscribe(OnExternalElementSelected, ThreadOption.UIThread);
+
+        _eventAggregator
+            .GetEvent<DocumentChangedEvent>()
+            .Subscribe(OnDocumentChanged, ThreadOption.PublisherThread);
     }
 
     // ── Collections ───────────────────────────────────────────────────────────
@@ -211,7 +216,10 @@ public class GrafcetCanvasViewModel : BindableBase, INavigationAware
 
         var result = _toolCallExecutor.Execute(batch);
         if (result.Success)
-            LoadFrom(_document); // Reload canvas to reflect the updated document
+        {
+            LoadFrom(_document);
+            PublishDocumentChanged();
+        }
     }
 
     private void ExecuteZoom(string direction)
@@ -255,6 +263,7 @@ public class GrafcetCanvasViewModel : BindableBase, INavigationAware
 
                 _undoRedoStack.Push(new AddStepCommand(step), _document);
                 LoadFrom(_document);
+                PublishDocumentChanged();
                 SelectedElement = Steps.FirstOrDefault(s => s.Id == step.Id);
                 break;
             }
@@ -274,6 +283,7 @@ public class GrafcetCanvasViewModel : BindableBase, INavigationAware
 
                 _undoRedoStack.Push(new AddTransitionCommand(transition), _document);
                 LoadFrom(_document);
+                PublishDocumentChanged();
                 SelectedElement = Transitions.FirstOrDefault(t => t.Id == transition.Id);
                 break;
             }
@@ -369,6 +379,7 @@ public class GrafcetCanvasViewModel : BindableBase, INavigationAware
 
         _undoRedoStack.Push(new AddLinkCommand(sourceId, targetId, sourceIsStep), _document);
         LoadFrom(_document);
+        PublishDocumentChanged();
 
         IsLinkMode  = false;
         _linkSource = null;
@@ -462,7 +473,10 @@ public class GrafcetCanvasViewModel : BindableBase, INavigationAware
 
         var result = _toolCallExecutor.Execute(batch);
         if (result.Success)
+        {
             LoadFrom(_document);
+            PublishDocumentChanged();
+        }
 
         ResetDrag();
     }
@@ -478,6 +492,19 @@ public class GrafcetCanvasViewModel : BindableBase, INavigationAware
     {
         if (payload is not null || _document is null) return;
         LoadFrom(_document);
+    }
+
+    private void OnDocumentChanged()
+    {
+        if (_document is null || _isSelfPublishing) return;
+        LoadFrom(_document);
+    }
+
+    private void PublishDocumentChanged()
+    {
+        _isSelfPublishing = true;
+        _eventAggregator.GetEvent<DocumentChangedEvent>().Publish();
+        _isSelfPublishing = false;
     }
 
     // ── Document loading ──────────────────────────────────────────────────────
@@ -615,7 +642,12 @@ public class GrafcetCanvasViewModel : BindableBase, INavigationAware
 
     // ── INavigationAware ──────────────────────────────────────────────────────
 
-    public void OnNavigatedTo(NavigationContext navigationContext) { }
+    public void OnNavigatedTo(NavigationContext navigationContext)
+    {
+        if (_document is not null)
+            LoadFrom(_document);
+    }
+
     public bool IsNavigationTarget(NavigationContext navigationContext) => true;
     public void OnNavigatedFrom(NavigationContext navigationContext) { }
 }

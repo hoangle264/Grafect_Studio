@@ -1,6 +1,8 @@
 using System.Collections.ObjectModel;
 using GrafcetStudio.Core.Models.Document;
+using GrafcetStudio.WPF.Events;
 using Prism.Commands;
+using Prism.Events;
 using Prism.Mvvm;
 using Prism.Navigation.Regions;
 
@@ -9,7 +11,8 @@ namespace GrafcetStudio.WPF.ViewModels;
 /// <summary>ViewModel for the transition table panel — exposes the full transition list for grid-based editing.</summary>
 public class TransitionTableViewModel : BindableBase, INavigationAware
 {
-    private readonly GrafcetDocument _document;
+    private readonly GrafcetDocument  _document;
+    private readonly IEventAggregator  _eventAggregator;
     private TransitionRowViewModel? _selectedTransition;
 
     public ObservableCollection<TransitionRowViewModel> Transitions { get; } = [];
@@ -27,12 +30,22 @@ public class TransitionTableViewModel : BindableBase, INavigationAware
     public DelegateCommand AddTransitionCommand    { get; }
     public DelegateCommand RemoveTransitionCommand { get; }
 
-    public TransitionTableViewModel(GrafcetDocument document)
+    public TransitionTableViewModel(GrafcetDocument document, IEventAggregator eventAggregator)
     {
-        _document = document;
+        _document        = document;
+        _eventAggregator = eventAggregator;
         AddTransitionCommand = new DelegateCommand(ExecuteAddTransition);
         RemoveTransitionCommand = new DelegateCommand(ExecuteRemoveTransition, () => SelectedTransition is not null)
             .ObservesProperty(() => SelectedTransition);
+
+        _eventAggregator
+            .GetEvent<DocumentChangedEvent>()
+            .Subscribe(OnDocumentChanged);
+    }
+
+    private void OnDocumentChanged()
+    {
+        LoadFrom(_document);
     }
 
     private void ExecuteAddTransition()
@@ -41,6 +54,8 @@ public class TransitionTableViewModel : BindableBase, INavigationAware
         newTrans.Id = Transitions.Count == 0 ? 1 : Transitions.Max(t => t.Id) + 1;
         Transitions.Add(newTrans);
         SelectedTransition = newTrans;
+        ApplyTo(_document);
+        _eventAggregator.GetEvent<DocumentChangedEvent>().Publish();
     }
 
     private void ExecuteRemoveTransition()
@@ -48,6 +63,8 @@ public class TransitionTableViewModel : BindableBase, INavigationAware
         if (SelectedTransition is null) return;
         Transitions.Remove(SelectedTransition);
         SelectedTransition = null;
+        ApplyTo(_document);
+        _eventAggregator.GetEvent<DocumentChangedEvent>().Publish();
     }
 
     /// <summary>Clears and reloads <see cref="Transitions"/> from the given document.</summary>
@@ -76,7 +93,10 @@ public class TransitionTableViewModel : BindableBase, INavigationAware
 
     // ── INavigationAware ──────────────────────────────────────────────────────
 
-    public void OnNavigatedTo(NavigationContext navigationContext)   { }
+    public void OnNavigatedTo(NavigationContext navigationContext)
+    {
+        LoadFrom(_document);
+    }
     public void OnNavigatedFrom(NavigationContext navigationContext) { }
     public bool IsNavigationTarget(NavigationContext navigationContext) => true;
 }
